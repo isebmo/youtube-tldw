@@ -1,0 +1,489 @@
+/* Base Design Tokens */
+:root {
+    --yts-primary: #ff0000;
+    --yts-primary-gradient: linear-gradient(135deg, #ff4b2b 0%, #ff416c 100%);
+    --yts-glass-bg: rgba(255, 255, 255, 0.85);
+    --yts-glass-bg-dark: rgba(15, 15, 15, 0.85);
+    --yts-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+    --yts-border: rgba(255, 255, 255, 0.18);
+    --yts-text: #0f0f0f;
+    --yts-text-dim: #606060;
+}
+
+/* Dark mode support (YouTube native check) */
+html[dark] :root,
+[dark] :root {
+    --yts-glass-bg: rgba(28, 28, 28, 0.9);
+    --yts-text: #f1f1f1;
+    --yts-text-dim: #aaaaaa;
+    --yts-border: rgba(255, 255, 255, 0.1);
+}
+
+/* Side Panel - Sidebar */
+#yt-summarizer-sidebar {
+    position: fixed;
+    top: 0;
+    right: -420px;
+    /* Hidden by default */
+    width: 400px;
+    height: 100vh;
+    background: var(--yts-glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-left: 1px solid var(--yts-border);
+    box-shadow: var(--yts-shadow);
+    z-index: 10000;
+    /* Above YouTube masthead */
+    transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    font-family: 'Roboto', 'Outfit', sans-serif;
+}
+
+#yt-summarizer-sidebar.open {
+    right: 0;
+}
+
+/* Sidebar Header */
+#yt-summarizer-panel-header {
+    padding: 24px;
+    border-bottom: 1px solid var(--yts-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#yt-summarizer-panel-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--yts-text);
+    letter-spacing: -0.5px;
+}
+
+#yt-summarizer-panel-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.panel-action-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    color: var(--yts-text);
+}
+
+.panel-action-btn:hover {
+    background: rgba(128, 128, 128, 0.1);
+}
+
+/* Content Area */
+#yt-summarizer-panel-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--yts-primary) transparent;
+}
+
+#yt-summarizer-panel-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+#yt-summarizer-panel-content::-webkit-scrollbar-thumb {
+    background-color: var(--yts-primary);
+    border-radius: 10px;
+}
+
+#yts-display-area {
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--yts-text);
+    white-space: pre-wrap;
+}
+
+/* Controls in Sidebar */
+#yt-summarizer-panel-footer {
+    padding: 20px;
+    border-top: 1px solid var(--yts-border);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.yts-primary-btn {
+    background: var(--yts-primary-gradient);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.yts-primary-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(255, 75, 43, 0.4);
+}
+
+.yts-primary-btn:active {
+    transform: translateY(0);
+}
+
+.yts-secondary-btn {
+    background: rgba(128, 128, 128, 0.1);
+    color: var(--yts-text);
+    border: 1px solid var(--yts-border);
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-weight: 500;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.yts-secondary-btn:hover {
+    background: rgba(128, 128, 128, 0.2);
+}
+
+/* Integrated Header Buttons */
+.yts-header-integration {
+    display: flex;
+    align-items: center;
+    margin-right: 8px;
+}
+
+.yts-pill-btn {
+    background: var(--yts-primary-gradient);
+    color: white;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 4px;
+    transition: filter 0.2s;
+}
+
+.yts-pill-btn img {
+    display: block;
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    border-radius: 4px;
+    object-fit: cover;
+}
+
+.yts-icon-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    color: var(--yts-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.yts-icon-btn:hover {
+    background: rgba(128, 128, 128, 0.1);
+}
+
+/* Loading State */
+.yts-loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 16px;
+}
+
+.yts-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(255, 75, 43, 0.1);
+    border-top-color: #ff4b2b;
+    border-radius: 50%;
+    animation: yts-spin 0.8s linear infinite;
+}
+
+@keyframes yts-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.yts-loading-text {
+    font-size: 14px;
+    color: var(--yts-text-dim);
+    font-weight: 500;
+}
+
+/* Toast/Notification for Copy */
+#yts-toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #000;
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    transform: translateY(100px);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 10001;
+}
+
+#yts-toast.show {
+    transform: translateY(0);
+}
+
+/* Model Badge */
+.yts-model-badge {
+    font-size: 11px;
+    color: var(--yts-text-dim);
+    background: rgba(128, 128, 128, 0.1);
+    border: 1px solid var(--yts-border);
+    padding: 4px 10px;
+    border-radius: 20px;
+    display: inline-block;
+    margin-bottom: 12px;
+    font-family: 'Consolas', 'Monaco', monospace;
+}
+
+/* Markdown Rendering Styles */
+.yts-markdown-content {
+    line-height: 1.7;
+    white-space: normal;
+}
+
+.yts-md-h2 {
+    font-size: 1.4em;
+    font-weight: 700;
+    margin: 1em 0 0.5em 0;
+    color: var(--yts-text);
+    border-bottom: 1px solid var(--yts-border);
+    padding-bottom: 0.3em;
+}
+
+.yts-md-h3 {
+    font-size: 1.2em;
+    font-weight: 600;
+    margin: 0.8em 0 0.4em 0;
+    color: var(--yts-text);
+}
+
+.yts-md-h4 {
+    font-size: 1.05em;
+    font-weight: 600;
+    margin: 0.6em 0 0.3em 0;
+    color: var(--yts-text);
+}
+
+.yts-md-p {
+    margin: 0.6em 0;
+}
+
+.yts-md-ul {
+    margin: 0.5em 0;
+    padding-left: 1.5em;
+    list-style-type: disc;
+}
+
+.yts-md-ul li {
+    margin: 0.3em 0;
+}
+
+.yts-md-ol {
+    margin: 0.5em 0;
+    padding-left: 1.5em;
+    list-style-type: decimal;
+}
+
+.yts-md-ol li {
+    margin: 0.3em 0;
+}
+
+.yts-md-hr {
+    border: none;
+    border-top: 1px solid var(--yts-border);
+    margin: 1em 0;
+}
+
+.yts-md-code {
+    background: rgba(128, 128, 128, 0.15);
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.9em;
+}
+
+.yts-markdown-content strong {
+    font-weight: 600;
+    color: var(--yts-text);
+}
+
+.yts-markdown-content em {
+    font-style: italic;
+}
+
+/* Q&A Input Area */
+#yts-qa-input-container {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+#yts-question-input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1px solid var(--yts-border);
+    border-radius: 12px;
+    background: rgba(128, 128, 128, 0.05);
+    color: var(--yts-text);
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+#yts-question-input:focus {
+    border-color: var(--yts-primary);
+}
+
+#yts-question-input::placeholder {
+    color: var(--yts-text-dim);
+}
+
+.yts-ask-btn {
+    background: var(--yts-primary-gradient);
+    color: white;
+    border: none;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.yts-ask-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(255, 75, 43, 0.3);
+}
+
+/* Q&A Bubbles */
+.yts-qa-bubble {
+    margin-top: 12px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.6;
+    white-space: normal;
+}
+
+.yts-qa-question {
+    background: var(--yts-primary-gradient);
+    color: white;
+    border-radius: 12px 12px 4px 12px;
+    margin-left: 40px;
+    text-align: right;
+}
+
+.yts-qa-answer {
+    background: rgba(128, 128, 128, 0.08);
+    border: 1px solid var(--yts-border);
+    border-radius: 12px 12px 12px 4px;
+    margin-right: 40px;
+    color: var(--yts-text);
+}
+
+.yts-qa-loading {
+    background: rgba(128, 128, 128, 0.08);
+    border: 1px solid var(--yts-border);
+    border-radius: 12px 12px 12px 4px;
+    margin-right: 40px;
+    color: var(--yts-text-dim);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.yts-qa-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 75, 43, 0.1);
+    border-top-color: #ff4b2b;
+    border-radius: 50%;
+    animation: yts-spin 0.8s linear infinite;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.yts-qa-separator {
+    border: none;
+    border-top: 1px solid var(--yts-border);
+    margin: 20px 0 4px 0;
+}
+
+/* Transcript Display */
+.yts-transcript-content {
+    white-space: normal;
+}
+
+.yts-transcript-line {
+    display: flex;
+    gap: 10px;
+    padding: 4px 0;
+    align-items: flex-start;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.06);
+}
+
+.yts-transcript-line:hover {
+    background: rgba(128, 128, 128, 0.05);
+    border-radius: 4px;
+}
+
+.yts-transcript-timestamp {
+    color: var(--yts-primary);
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'Consolas', 'Monaco', monospace;
+    min-width: 48px;
+    flex-shrink: 0;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+
+.yts-transcript-timestamp:hover {
+    background: rgba(255, 0, 0, 0.1);
+    text-decoration: underline;
+}
+
+.yts-transcript-text {
+    flex: 1;
+    line-height: 1.5;
+}

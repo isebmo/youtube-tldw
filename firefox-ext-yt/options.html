@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/png" href="logo.png">
+  <title>YouTube TLDW; Options</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 0;
+      margin: 0;
+      background-color: #f9f9f9;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .options-container {
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      margin: 40px auto;
+      max-width: 600px;
+      width: 90%;
+    }
+
+    .logo-container {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .logo-img {
+      width: 80px;
+      height: 80px;
+      border-radius: 16px;
+      object-fit: cover;
+    }
+
+    h1 {
+      color: #333;
+      border-bottom: 2px solid #ddd;
+      padding-bottom: 10px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: #555;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+      /* Makes sure padding doesn't affect width */
+    }
+
+    textarea {
+      height: 150px;
+      resize: vertical;
+    }
+
+    button {
+      background-color: #4285f4;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    button:hover {
+      background-color: #357ae8;
+    }
+
+    .coffee-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background-color: #FFDD00;
+      color: #000000;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      text-decoration: none;
+      font-weight: bold;
+      margin-top: 20px;
+      transition: background-color 0.2s;
+    }
+
+    .coffee-btn:hover {
+      background-color: #ffca00;
+    }
+
+    #status {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 4px;
+      display: none;
+    }
+
+    .success {
+      background-color: #dff0d8;
+      color: #3c763d;
+    }
+
+    .error {
+      background-color: #f2dede;
+      color: #a94442;
+    }
+
+    .credits-container {
+      margin-top: 60px;
+      display: flex;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .credits-box {
+      background: linear-gradient(135deg, #fff5f5 0%, #fff0f0 100%);
+      border: 1px dashed #ff8080;
+      padding: 20px;
+      border-radius: 16px;
+      max-width: 400px;
+      box-shadow: 0 4px 15px rgba(255, 0, 0, 0.05);
+      position: relative;
+    }
+
+    .credits-box p {
+      margin: 10px 0;
+      color: #d63031;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    .credits-box a {
+      color: #ff4757;
+      text-decoration: underline;
+      font-weight: bold;
+    }
+
+    .hearts {
+      font-size: 20px;
+      margin-bottom: 5px;
+    }
+
+    .hearts-animated {
+      font-size: 24px;
+      animation: pulse 1.5s infinite;
+      display: inline-block;
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(1.2);
+      }
+
+      100% {
+        transform: scale(1);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="options-container">
+    <div class="logo-container">
+      <img src="logo.png" alt="Logo" class="logo-img">
+    </div>
+    <h1>Extension Options</h1>
+
+    <div class="form-group">
+      <label for="aiService">AI Service:</label>
+      <select id="aiService">
+        <option value="gemini">Google Gemini</option>
+        <option value="openai" disabled>OpenAI (Coming Soon)</option>
+        <option value="openrouter" disabled>OpenRouter (Coming Soon)</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="apiKey" id="apiKeyLabel">Gemini API Key:</label>
+      <input type="password" id="apiKey" placeholder="Enter your API Key">
+    </div>
+
+    <div class="form-group">
+      <label for="userPrompt">Additional Instructions (optional):</label>
+      <textarea id="userPrompt" placeholder="e.g. Summary should be in french"></textarea>
+      <small>These instructions will be added to the base prompt.</small>
+    </div>
+
+    <button id="save">Save Settings</button>
+    <div id="status"></div>
+
+    <a href="https://paypal.me/papageek" target="_blank" class="coffee-btn">
+      <span style="font-size: 20px;">☕</span> Buy me a Coffee
+    </a>
+
+    <div class="credits-container">
+      <div class="credits-box">
+        <div class="hearts">❤️ ❤️ ❤️</div>
+        <p>This extension would not exist without the <a href="https://github.com/jdepoix/youtube-transcript-api"
+            target="_blank">youtube-transcript-api</a> project, so a thousand thanks!</p>
+        <div class="hearts-animated">💖 ✨ 💖</div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="options.js"></script>
+</body>
+
+</html>
