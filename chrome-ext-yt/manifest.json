@@ -1,11 +1,10 @@
 {
     "manifest_version": 3,
     "name": "YouTube TLDW;",
-    "version": "1.0",
+    "version": "1.0.1",
     "description": "Summarize YouTube videos using AI API",
     "permissions": [
         "activeTab",
-        "scripting",
         "storage"
     ],
     "host_permissions": [
@@ -31,12 +30,12 @@
     ],
     "action": {
         "default_title": "YouTube TLDW;",
-        "default_icon": "logo.png"
+        "default_icon": "icons/icon-48.png"
     },
     "icons": {
-        "16": "logo.png",
-        "48": "logo.png",
-        "128": "logo.png"
+        "16": "icons/icon-16.png",
+        "48": "icons/icon-48.png",
+        "128": "icons/icon-128.png"
     },
     "web_accessible_resources": [
         {
