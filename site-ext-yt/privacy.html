@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy — YouTube TLDW;</title>
+    <link rel="icon" type="image/png" href="logo.png">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .privacy {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 60px 24px 80px;
+        }
+        .privacy h1 {
+            font-size: clamp(28px, 5vw, 42px);
+            font-weight: 900;
+            letter-spacing: -1px;
+            margin-bottom: 8px;
+        }
+        .privacy .last-updated {
+            color: #888;
+            font-size: 14px;
+            margin-bottom: 40px;
+        }
+        .privacy h2 {
+            font-size: 20px;
+            font-weight: 800;
+            margin-top: 36px;
+            margin-bottom: 12px;
+        }
+        .privacy p, .privacy li {
+            font-size: 16px;
+            color: #444;
+            line-height: 1.7;
+            margin-bottom: 12px;
+        }
+        .privacy ul {
+            padding-left: 24px;
+            margin-bottom: 16px;
+        }
+        .privacy li {
+            margin-bottom: 6px;
+        }
+        .privacy a {
+            color: var(--red);
+            font-weight: 700;
+            text-decoration: none;
+            border-bottom: 2px solid var(--red);
+        }
+        .privacy a:hover {
+            color: var(--black);
+            border-color: var(--black);
+        }
+        .privacy-card {
+            border: var(--border);
+            border-radius: var(--radius);
+            padding: 24px 28px;
+            background: var(--yellow);
+            box-shadow: var(--shadow);
+            margin: 32px 0;
+        }
+        .privacy-card p {
+            color: var(--black);
+            margin-bottom: 0;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="index.html" class="nav-logo">
+                <img src="logo.png" alt="Logo" width="36" height="36">
+                <span>YouTube TLDW;</span>
+            </a>
+            <a href="https://github.com/isebmo/youtube-tldw" target="_blank" class="nav-link">GitHub</a>
+        </div>
+    </nav>
+
+    <main class="privacy">
+
+        <h1>Privacy Policy</h1>
+        <p class="last-updated">Last updated: March 27, 2026</p>
+
+        <div class="privacy-card">
+            <p>YouTube TLDW; does not collect, store, or transmit any personal data. Your API key and settings never leave your browser.</p>
+        </div>
+
+        <h2>What data does the extension access?</h2>
+        <p>When you click "Summarize" on a YouTube video, the extension:</p>
+        <ul>
+            <li>Reads the video transcript from YouTube using YouTube's public InnerTube API.</li>
+            <li>Sends the transcript text to the AI service you selected (Gemini, OpenAI, or OpenRouter) to generate a summary.</li>
+        </ul>
+
+        <h2>What data is stored?</h2>
+        <p>The extension stores the following in your browser's local extension storage (<code>browser.storage.sync</code> / <code>chrome.storage.sync</code>):</p>
+        <ul>
+            <li>Your AI service API key</li>
+            <li>Your selected AI service (Gemini, OpenAI, or OpenRouter)</li>
+            <li>Your custom prompt instructions (if any)</li>
+        </ul>
+        <p>This data stays entirely in your browser and is never sent to any server controlled by us.</p>
+
+        <h2>What data is shared with third parties?</h2>
+        <p>When you request a summary, the video transcript is sent to the AI provider you chose. No other data is shared. The extension does not add tracking parameters, identifiers, or personal information to these requests.</p>
+        <p>Please review the privacy policy of your chosen AI provider:</p>
+        <ul>
+            <li><a href="https://ai.google.dev/gemini-api/terms" target="_blank">Google Gemini API Terms</a></li>
+            <li><a href="https://openai.com/policies/privacy-policy" target="_blank">OpenAI Privacy Policy</a></li>
+            <li><a href="https://openrouter.ai/privacy" target="_blank">OpenRouter Privacy Policy</a></li>
+        </ul>
+
+        <h2>Analytics and tracking</h2>
+        <p>The extension does not include any analytics, telemetry, or tracking code. There are no cookies, no fingerprinting, and no remote logging.</p>
+
+        <h2>No account required</h2>
+        <p>The extension does not require you to create an account or sign in. There is no user registration and no server-side component.</p>
+
+        <h2>Open source</h2>
+        <p>The full source code is available on <a href="https://github.com/isebmo/youtube-tldw" target="_blank">GitHub</a>. You can inspect every line of code to verify these claims.</p>
+
+        <h2>Contact</h2>
+        <p>If you have questions about this privacy policy, please open an issue on <a href="https://github.com/isebmo/youtube-tldw/issues" target="_blank">GitHub</a>.</p>
+
+    </main>
+
+    <footer class="footer">
+        <p>Made by <a href="https://github.com/isebmo" target="_blank">isebmo</a> &middot; <a href="privacy.html">Privacy Policy</a></p>
+    </footer>
+
+</body>
+</html>
