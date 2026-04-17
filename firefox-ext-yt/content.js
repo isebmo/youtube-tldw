@@ -45,9 +45,8 @@ class TranscriptFetcher {
     }
 
     static _decodeHtmlEntities(text) {
-        const textarea = document.createElement('textarea');
-        textarea.innerHTML = text;
-        return textarea.value;
+        const doc = new DOMParser().parseFromString(text, 'text/html');
+        return doc.body.textContent || '';
     }
 
     static _formatTimestamp(seconds) {
@@ -168,13 +167,18 @@ class YouTubeSummarizerUI {
         return window.location.pathname === '/watch' && new URLSearchParams(window.location.search).has('v');
     }
 
+    _setHTMLSafe(element, htmlString) {
+        const doc = new DOMParser().parseFromString(htmlString, 'text/html');
+        element.replaceChildren(...Array.from(doc.body.childNodes));
+    }
+
     injectSidebar() {
         if (document.getElementById(this.sidebarId)) return;
 
         const sidebar = document.createElement('div');
         sidebar.id = this.sidebarId;
         const logoUrl = browser.runtime.getURL('logo.png');
-        sidebar.innerHTML = `
+        this._setHTMLSafe(sidebar, `
             <div id="yt-summarizer-panel-header">
                 <div style="display:flex; align-items:center; gap:10px;">
                     <img src="${logoUrl}" style="width:24px; height:24px; border-radius:4px; object-fit:cover;">
@@ -215,7 +219,7 @@ class YouTubeSummarizerUI {
                 <button id="yts-transcript-btn" class="yts-secondary-btn">Show Transcript</button>
             </div>
             <div id="yts-toast">Copied to clipboard!</div>
-        `;
+        `);
 
         document.body.appendChild(sidebar);
 
@@ -242,12 +246,12 @@ class YouTubeSummarizerUI {
         container.id = this.headerBtnContainerId;
         container.className = 'yts-header-integration';
         const logoUrl = browser.runtime.getURL('logo.png');
-        container.innerHTML = `
+        this._setHTMLSafe(container, `
             <button class="yts-pill-btn" title="Summarize Video">
                 <img src="${logoUrl}">
                 Summarize
             </button>
-        `;
+        `);
 
         // Insert before notifications
         target.parentNode.insertBefore(container, target);
@@ -365,7 +369,7 @@ class YouTubeSummarizerUI {
             if (response.error) throw new Error(response.error);
             this.cachedSummary = response.summary;
             const modelBadge = response.model ? `<div class="yts-model-badge">Model: ${response.model}</div>` : '';
-            document.getElementById('yts-text-content').innerHTML = modelBadge + this.renderMarkdown(response.summary);
+            this._setHTMLSafe(document.getElementById('yts-text-content'), modelBadge + this.renderMarkdown(response.summary));
         } catch (error) {
             document.getElementById('yts-text-content').textContent = "Error: " + error.message;
         } finally {
@@ -437,7 +441,10 @@ class YouTubeSummarizerUI {
         if (type === 'question') {
             bubble.textContent = content;
         } else if (type === 'loading') {
-            bubble.innerHTML = '<div class="yts-qa-spinner"></div> ' + content;
+            const spinner = document.createElement('div');
+            spinner.className = 'yts-qa-spinner';
+            bubble.appendChild(spinner);
+            bubble.appendChild(document.createTextNode(' ' + content));
         }
 
         container.appendChild(bubble);
@@ -451,7 +458,7 @@ class YouTubeSummarizerUI {
         if (!bubble) return;
         bubble.className = `yts-qa-bubble yts-qa-${type}`;
         const modelBadge = model ? `<div class="yts-model-badge" style="margin-bottom:8px;">Model: ${model}</div>` : '';
-        bubble.innerHTML = modelBadge + this.renderMarkdown(content);
+        this._setHTMLSafe(bubble, modelBadge + this.renderMarkdown(content));
         document.getElementById('yt-summarizer-panel-content').scrollTop =
             document.getElementById('yt-summarizer-panel-content').scrollHeight;
     }
@@ -468,28 +475,36 @@ class YouTubeSummarizerUI {
         // Horizontal rules
         html = html.replace(/^---$/gm, '<hr class="yts-md-hr">');
 
-        // Headers (h1 to h3)
+        // Headers (h1 to h4)
+        html = html.replace(/^#### (.+)$/gm, '<h5 class="yts-md-h5">$1</h5>');
         html = html.replace(/^### (.+)$/gm, '<h4 class="yts-md-h4">$1</h4>');
         html = html.replace(/^## (.+)$/gm, '<h3 class="yts-md-h3">$1</h3>');
         html = html.replace(/^# (.+)$/gm, '<h2 class="yts-md-h2">$1</h2>');
+
+        // Unordered lists — process BEFORE bold/italic so `* item` is not parsed as emphasis
+        // Nested (indented) items first, then top-level
+        html = html.replace(/^[ \t]+[\-\*] (.+)$/gm, '<uli2>$1</uli2>');
+        html = html.replace(/^[\-\*] (.+)$/gm, '<uli>$1</uli>');
+
+        // Numbered lists
+        html = html.replace(/^[ \t]+\d+\. (.+)$/gm, '<oli2>$1</oli2>');
+        html = html.replace(/^\d+\. (.+)$/gm, '<oli>$1</oli>');
 
         // Bold and italic
         html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
         html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
         html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
 
-        // Unordered lists (use temp tags to distinguish from ordered)
-        html = html.replace(/^[\-\*] (.+)$/gm, '<uli>$1</uli>');
+        // Wrap nested items in sub-lists
+        html = html.replace(/((?:<uli2>[\s\S]*?<\/uli2>\n?)+)/g, '<ul class="yts-md-ul yts-md-ul-nested">$1</ul>');
+        html = html.replace(/((?:<oli2>[\s\S]*?<\/oli2>\n?)+)/g, '<ol class="yts-md-ol yts-md-ol-nested">$1</ol>');
 
-        // Numbered lists
-        html = html.replace(/^\d+\. (.+)$/gm, '<oli>$1</oli>');
-
-        // Wrap consecutive items in proper containers
+        // Wrap top-level items in lists
         html = html.replace(/((?:<uli>[\s\S]*?<\/uli>\n?)+)/g, '<ul class="yts-md-ul">$1</ul>');
         html = html.replace(/((?:<oli>[\s\S]*?<\/oli>\n?)+)/g, '<ol class="yts-md-ol">$1</ol>');
 
         // Convert temp tags to li
-        html = html.replace(/<(\/?)(u|o)li>/g, '<$1li>');
+        html = html.replace(/<(\/?)[uo]li2?>/g, '<$1li>');
 
         // Inline code
         html = html.replace(/`([^`]+)`/g, '<code class="yts-md-code">$1</code>');
@@ -500,8 +515,8 @@ class YouTubeSummarizerUI {
 
         // Clean up paragraphs wrapping block elements
         html = html.replace(/<p class="yts-md-p"><\/p>/g, '');
-        html = html.replace(/<p class="yts-md-p">\s*(<(?:h[2-4]|ul|ol|hr)[^>]*>)/g, '$1');
-        html = html.replace(/(<\/(?:h[2-4]|ul|ol|hr)>)\s*<\/p>/g, '$1');
+        html = html.replace(/<p class="yts-md-p">\s*(<(?:h[2-5]|ul|ol|hr)[^>]*>)/g, '$1');
+        html = html.replace(/(<\/(?:h[2-5]|ul|ol|hr)>)\s*<\/p>/g, '$1');
 
         // Clean stray newlines
         html = html.replace(/\n/g, '');
