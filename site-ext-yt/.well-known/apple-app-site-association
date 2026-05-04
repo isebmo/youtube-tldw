@@ -1,0 +1,19 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["2T8A23HDD8.com.mouret.youtube-tldw"],
+        "components": [
+          {
+            "/": "/share",
+            "comment": "Open the share endpoint in the TLDW app"
+          },
+          {
+            "/": "/share*",
+            "comment": "Open the share endpoint with any query string"
+          }
+        ]
+      }
+    ]
+  }
+}
