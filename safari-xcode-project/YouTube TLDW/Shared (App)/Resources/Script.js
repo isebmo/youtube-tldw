@@ -254,6 +254,7 @@ const App = {
         this.bindHome();
         this.bindSettings();
         this.bindHistory();
+        this.bindUpgrade();
         this.loadSettingsForm();
         this.refreshHistoryList();
 
@@ -263,18 +264,54 @@ const App = {
         Entitlement.refresh().then((ent) => this.renderTrialBadge(ent));
     },
 
+    bindUpgrade() {
+        const upgradeBtn = this.el('upgrade-btn');
+        const restoreBtn = this.el('restore-btn');
+        if (upgradeBtn) {
+            upgradeBtn.addEventListener('click', async () => {
+                upgradeBtn.disabled = true;
+                upgradeBtn.textContent = "Achat en cours…";
+                const res = await purchasePremium();
+                Entitlement.cache = res;
+                this.renderTrialBadge(res || {});
+                upgradeBtn.disabled = false;
+                if (res && res.premium) {
+                    this.showToast("Premium activé. Merci !");
+                } else if (res && res.success === false) {
+                    this.showToast("Achat annulé.");
+                }
+            });
+        }
+        if (restoreBtn) {
+            restoreBtn.addEventListener('click', async () => {
+                const res = await restorePurchases();
+                Entitlement.cache = res;
+                this.renderTrialBadge(res || {});
+                this.showToast(res && res.premium ? "Achat restauré." : "Aucun achat trouvé.");
+            });
+        }
+    },
+
     renderTrialBadge(ent) {
         const status = this.el('trial-status');
+        const upgradeRow = this.el('upgrade-row');
+        const upgradeBtn = this.el('upgrade-btn');
         if (!status) return;
         if (ent.premium) {
             status.textContent = "Premium · accès illimité";
             status.className = "trial-status trial-premium";
+            if (upgradeRow) upgradeRow.hidden = true;
         } else if (ent.trialActive) {
             status.textContent = `Essai gratuit · ${ent.trialDaysRemaining} jour${ent.trialDaysRemaining > 1 ? 's' : ''} restant${ent.trialDaysRemaining > 1 ? 's' : ''}`;
             status.className = "trial-status trial-active";
+            if (upgradeRow) upgradeRow.hidden = false;
         } else {
             status.textContent = "Essai expiré · Premium requis";
             status.className = "trial-status trial-expired";
+            if (upgradeRow) upgradeRow.hidden = false;
+        }
+        if (upgradeBtn) {
+            upgradeBtn.textContent = ent.price ? `Passer à Premium · ${ent.price}` : "Passer à Premium";
         }
     },
 
