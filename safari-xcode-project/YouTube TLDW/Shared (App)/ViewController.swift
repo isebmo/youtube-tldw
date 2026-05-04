@@ -38,6 +38,9 @@ class ViewController: PlatformViewController, WKNavigationDelegate, WKScriptMess
         let replyHandler: WKScriptMessageHandlerWithReply = self
         ucc.addScriptMessageHandler(replyHandler, contentWorld: .page, name: "nativeFetch")
         ucc.addScriptMessageHandler(replyHandler, contentWorld: .page, name: "openExternal")
+        ucc.addScriptMessageHandler(replyHandler, contentWorld: .page, name: "refreshEntitlement")
+        ucc.addScriptMessageHandler(replyHandler, contentWorld: .page, name: "purchasePremium")
+        ucc.addScriptMessageHandler(replyHandler, contentWorld: .page, name: "restorePurchases")
 
         self.webView.loadFileURL(Bundle.main.url(forResource: "Main", withExtension: "html")!, allowingReadAccessTo: Bundle.main.resourceURL!)
 
@@ -172,8 +175,53 @@ class ViewController: PlatformViewController, WKNavigationDelegate, WKScriptMess
                 #endif
             }
             replyHandler(nil, nil)
+        case "refreshEntitlement":
+            handleEntitlement(reply: replyHandler)
+        case "purchasePremium":
+            handlePurchase(reply: replyHandler)
+        case "restorePurchases":
+            handleRestore(reply: replyHandler)
         default:
             replyHandler(nil, "Unknown handler: \(message.name)")
+        }
+    }
+
+    private func handleEntitlement(reply: @escaping (Any?, String?) -> Void) {
+        if #available(iOS 15.0, macOS 12.0, *) {
+            Task {
+                let payload = await IAP.currentEntitlement()
+                reply(payload, nil)
+            }
+        } else {
+            reply(["premium": false, "trialDaysRemaining": 0, "trialActive": true, "price": ""], nil)
+        }
+    }
+
+    private func handlePurchase(reply: @escaping (Any?, String?) -> Void) {
+        if #available(iOS 15.0, macOS 12.0, *) {
+            Task {
+                let success = await IAP.purchase()
+                let payload = await IAP.currentEntitlement()
+                var dict = payload
+                dict["success"] = success
+                reply(dict, nil)
+            }
+        } else {
+            reply(nil, "StoreKit 2 requires iOS 15 / macOS 12")
+        }
+    }
+
+    private func handleRestore(reply: @escaping (Any?, String?) -> Void) {
+        if #available(iOS 15.0, macOS 12.0, *) {
+            Task {
+                let success = await IAP.restore()
+                let payload = await IAP.currentEntitlement()
+                var dict = payload
+                dict["success"] = success
+                reply(dict, nil)
+            }
+        } else {
+            reply(nil, "StoreKit 2 requires iOS 15 / macOS 12")
         }
     }
 
@@ -223,6 +271,85 @@ final class AppDeepLink {
     func store(_ url: URL) { pending = url }
     func consume() -> URL? { let u = pending; pending = nil; return u }
 }
+
+// MARK: - IAP / 14-day trial -----------------------------------------------
+
+#if canImport(StoreKit)
+import StoreKit
+
+let premiumProductID = "com.mouret.youtube-tldw.premium"
+let trialDurationDays = 14
+let trialStartKey = "tldw.trialStart"
+
+@available(iOS 15.0, macOS 12.0, *)
+enum IAP {
+    static func ensureTrialStarted() {
+        let defaults = UserDefaults(suiteName: appGroupID) ?? .standard
+        if defaults.object(forKey: trialStartKey) == nil {
+            defaults.set(Date().timeIntervalSince1970, forKey: trialStartKey)
+        }
+    }
+
+    static func trialDaysRemaining() -> Int {
+        let defaults = UserDefaults(suiteName: appGroupID) ?? .standard
+        let start = defaults.double(forKey: trialStartKey)
+        guard start > 0 else { return trialDurationDays }
+        let elapsed = Date().timeIntervalSince1970 - start
+        let remaining = Double(trialDurationDays * 86400) - elapsed
+        return max(0, Int(ceil(remaining / 86400)))
+    }
+
+    static func isPremiumPurchased() async -> Bool {
+        for await result in Transaction.currentEntitlements {
+            if case .verified(let transaction) = result,
+               transaction.productID == premiumProductID,
+               transaction.revocationDate == nil {
+                return true
+            }
+        }
+        return false
+    }
+
+    static func loadProduct() async -> Product? {
+        (try? await Product.products(for: [premiumProductID]))?.first
+    }
+
+    static func purchase() async -> Bool {
+        guard let product = await loadProduct() else { return false }
+        do {
+            let result = try await product.purchase()
+            if case .success(let verification) = result,
+               case .verified(let transaction) = verification {
+                await transaction.finish()
+                return true
+            }
+        } catch {
+            NSLog("[IAP] purchase error: %@", String(describing: error))
+        }
+        return false
+    }
+
+    static func restore() async -> Bool {
+        try? await AppStore.sync()
+        return await isPremiumPurchased()
+    }
+
+    static func currentEntitlement() async -> [String: Any] {
+        ensureTrialStarted()
+        let premium = await isPremiumPurchased()
+        let days = trialDaysRemaining()
+        let product = await loadProduct()
+        return [
+            "premium": premium,
+            "trialDaysRemaining": days,
+            "trialActive": days > 0,
+            "productID": premiumProductID,
+            "price": product?.displayPrice ?? "",
+            "productName": product?.displayName ?? "Premium"
+        ]
+    }
+}
+#endif
 
 // MARK: - App Intents (iOS 16+ / macOS 13+)
 // Allows the Shortcuts app and Siri to drive the summarizer with a YouTube URL.

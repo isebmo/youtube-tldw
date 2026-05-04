@@ -1,3 +1,27 @@
+// ----- IAP / Trial bridges -------------------------------------------------
+const Entitlement = {
+    cache: null,
+    async refresh() {
+        try {
+            this.cache = await window.webkit.messageHandlers.refreshEntitlement.postMessage({});
+        } catch (e) {
+            this.cache = { premium: true, trialDaysRemaining: 0, trialActive: false };
+        }
+        return this.cache;
+    },
+    async get() { return this.cache || await this.refresh(); },
+    canSummarize(ent) { return !!(ent && (ent.premium || ent.trialActive)); }
+};
+
+async function purchasePremium() {
+    try { return await window.webkit.messageHandlers.purchasePremium.postMessage({}); }
+    catch (e) { return { success: false }; }
+}
+async function restorePurchases() {
+    try { return await window.webkit.messageHandlers.restorePurchases.postMessage({}); }
+    catch (e) { return { success: false }; }
+}
+
 async function nativeFetch(url, options = {}) {
     const reply = await window.webkit.messageHandlers.nativeFetch.postMessage({
         url,
@@ -234,6 +258,66 @@ const App = {
         this.refreshHistoryList();
 
         window.handleDeepLink = (urlString) => this.handleDeepLink(urlString);
+
+        // Hydrate entitlement and refresh the trial badge in Settings.
+        Entitlement.refresh().then((ent) => this.renderTrialBadge(ent));
+    },
+
+    renderTrialBadge(ent) {
+        const status = this.el('trial-status');
+        if (!status) return;
+        if (ent.premium) {
+            status.textContent = "Premium · accès illimité";
+            status.className = "trial-status trial-premium";
+        } else if (ent.trialActive) {
+            status.textContent = `Essai gratuit · ${ent.trialDaysRemaining} jour${ent.trialDaysRemaining > 1 ? 's' : ''} restant${ent.trialDaysRemaining > 1 ? 's' : ''}`;
+            status.className = "trial-status trial-active";
+        } else {
+            status.textContent = "Essai expiré · Premium requis";
+            status.className = "trial-status trial-expired";
+        }
+    },
+
+    showPaywall(ent) {
+        const expired = ent && !ent.premium && !ent.trialActive;
+        const price = (ent && ent.price) || "";
+        const html = `
+            <div class="paywall">
+                <div class="paywall-badge">${expired ? "⏱" : "✨"}</div>
+                <h2 class="paywall-title">${expired ? "Essai gratuit terminé" : "Passe à Premium"}</h2>
+                <p class="paywall-sub">${expired ? "Pour continuer à résumer des vidéos, débloque YouTube TLDW; Premium." : "Accès illimité aux résumés, achat unique."}</p>
+                <button id="paywall-buy" class="primary-btn">${price ? `Acheter Premium · ${price}` : "Acheter Premium"}</button>
+                <button id="paywall-restore" class="ghost-btn">Restaurer mes achats</button>
+            </div>
+        `;
+        this.el('result-area').hidden = false;
+        this.el('result-meta').innerHTML = '';
+        this.el('result-actions').innerHTML = '';
+        this.el('result-body').innerHTML = html;
+        this.el('paywall-buy').addEventListener('click', async () => {
+            const btn = this.el('paywall-buy');
+            btn.disabled = true;
+            btn.textContent = "Achat en cours…";
+            const res = await purchasePremium();
+            this.renderTrialBadge(res || {});
+            if (res && res.premium) {
+                this.showToast("Premium activé. Merci !");
+                this.el('result-area').hidden = true;
+            } else if (res && res.success === false) {
+                btn.disabled = false;
+                btn.textContent = price ? `Acheter Premium · ${price}` : "Acheter Premium";
+            }
+        });
+        this.el('paywall-restore').addEventListener('click', async () => {
+            const res = await restorePurchases();
+            this.renderTrialBadge(res || {});
+            if (res && res.premium) {
+                this.showToast("Achat restauré.");
+                this.el('result-area').hidden = true;
+            } else {
+                this.showToast("Aucun achat trouvé.");
+            }
+        });
     },
 
     showToast(msg) {
@@ -281,6 +365,11 @@ const App = {
     },
 
     async summarizeFromUrl(url) {
+        const ent = await Entitlement.get();
+        if (!Entitlement.canSummarize(ent)) {
+            this.showPaywall(ent);
+            return;
+        }
         const settings = Settings.load();
         if (!settings.apiKey) {
             this.showToast("Configure ta clé API dans Réglages.");
