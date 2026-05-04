@@ -277,7 +277,7 @@ final class AppDeepLink {
 #if canImport(StoreKit)
 import StoreKit
 
-let premiumProductID = "com.mouret.youtube-tldw.premium"
+let premiumProductID = "com.mouret.youtubetldw.premium"
 let trialDurationDays = 14
 let trialStartKey = "tldw.trialStart"
 
