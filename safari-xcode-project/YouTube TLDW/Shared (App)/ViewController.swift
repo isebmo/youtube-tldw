@@ -311,17 +311,38 @@ enum IAP {
     }
 
     static func loadProduct() async -> Product? {
-        (try? await Product.products(for: [premiumProductID]))?.first
+        do {
+            let products = try await Product.products(for: [premiumProductID])
+            NSLog("[IAP] loaded %d product(s) for %@", products.count, premiumProductID)
+            return products.first
+        } catch {
+            NSLog("[IAP] loadProduct error: %@", String(describing: error))
+            return nil
+        }
     }
 
     static func purchase() async -> Bool {
-        guard let product = await loadProduct() else { return false }
+        guard let product = await loadProduct() else {
+            NSLog("[IAP] purchase: no product loaded")
+            return false
+        }
+        NSLog("[IAP] purchase: starting for %@ (%@)", product.id, product.displayPrice)
         do {
             let result = try await product.purchase()
-            if case .success(let verification) = result,
-               case .verified(let transaction) = verification {
-                await transaction.finish()
-                return true
+            switch result {
+            case .success(let verification):
+                if case .verified(let transaction) = verification {
+                    NSLog("[IAP] purchase verified, finishing transaction")
+                    await transaction.finish()
+                    return true
+                }
+                NSLog("[IAP] purchase succeeded but verification failed")
+            case .userCancelled:
+                NSLog("[IAP] purchase userCancelled")
+            case .pending:
+                NSLog("[IAP] purchase pending")
+            @unknown default:
+                NSLog("[IAP] purchase unknown result")
             }
         } catch {
             NSLog("[IAP] purchase error: %@", String(describing: error))

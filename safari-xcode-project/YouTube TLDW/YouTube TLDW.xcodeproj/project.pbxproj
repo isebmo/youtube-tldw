@@ -101,6 +101,8 @@
 /* Begin PBXFileReference section */
 		064964F62FA8A5C4000FDF31 /* ShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		064965052FA8D6AD000FDF31 /* YouTube TLDW (iOS).entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "YouTube TLDW (iOS).entitlements"; sourceTree = "<group>"; };
+		06DEAD2024050200000001 /* StoreKitConfiguration.storekit */ = {isa = PBXFileReference; lastKnownFileType = file.storekit; path = StoreKitConfiguration.storekit; sourceTree = "<group>"; };
+		06DEAD2024050200000002 /* YouTube TLDW (macOS).entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "YouTube TLDW (macOS).entitlements"; sourceTree = "<group>"; };
 		06CE40672F65B68F0033F67C /* Base */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = Base; path = Base.lproj/Main.html; sourceTree = "<group>"; };
 		06CE40682F65B68F0033F67C /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Icon.png; sourceTree = "<group>"; };
 		06CE40692F65B68F0033F67C /* Style.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = Style.css; sourceTree = "<group>"; };
@@ -195,7 +197,9 @@
 		06CE405F2F65B68F0033F67C = {
 			isa = PBXGroup;
 			children = (
+				06DEAD2024050200000001 /* StoreKitConfiguration.storekit */,
 				064965052FA8D6AD000FDF31 /* YouTube TLDW (iOS).entitlements */,
+				06DEAD2024050200000002 /* YouTube TLDW (macOS).entitlements */,
 				06CE40642F65B68F0033F67C /* Shared (App) */,
 				06CE406D2F65B6900033F67C /* Shared (Extension) */,
 				06CE40752F65B6900033F67C /* iOS (App) */,
