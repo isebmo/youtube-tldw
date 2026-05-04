@@ -35,8 +35,9 @@ class ViewController: PlatformViewController, WKNavigationDelegate, WKScriptMess
         let ucc = self.webView.configuration.userContentController
         ucc.add(self, name: "controller")
         ucc.add(self, name: "saveSettings")
-        ucc.addScriptMessageHandler(self, contentWorld: .page, name: "nativeFetch")
-        ucc.addScriptMessageHandler(self, contentWorld: .page, name: "openExternal")
+        let replyHandler: WKScriptMessageHandlerWithReply = self
+        ucc.addScriptMessageHandler(replyHandler, contentWorld: .page, name: "nativeFetch")
+        ucc.addScriptMessageHandler(replyHandler, contentWorld: .page, name: "openExternal")
 
         self.webView.loadFileURL(Bundle.main.url(forResource: "Main", withExtension: "html")!, allowingReadAccessTo: Bundle.main.resourceURL!)
 
