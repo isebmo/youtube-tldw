@@ -4,6 +4,17 @@
 <dict>
 	<key>SFSafariWebExtensionConverterVersion</key>
 	<string>26.2</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.mouret.youtube-tldw.url</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>tldw</string>
+			</array>
+		</dict>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

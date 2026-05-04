@@ -2,19 +2,110 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'">
-
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data: https:; connect-src 'self';">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
     <link rel="stylesheet" href="../Style.css">
     <script src="../Script.js" defer></script>
 </head>
 <body>
-    <img src="../Icon.png" width="128" height="128" alt="YouTube TLDW Icon">
-    <p class="platform-ios">You can turn on YouTube TLDW’s Safari extension in Settings.</p>
-    <p class="platform-mac state-unknown">You can turn on YouTube TLDW’s extension in Safari Extensions preferences.</p>
-    <p class="platform-mac state-on">YouTube TLDW’s extension is currently on. You can turn it off in Safari Extensions preferences.</p>
-    <p class="platform-mac state-off">YouTube TLDW’s extension is currently off. You can turn it on in Safari Extensions preferences.</p>
-    <button class="platform-mac open-preferences">Quit and Open Safari Extensions Preferences…</button>
+    <div id="app">
+        <header id="topbar">
+            <div class="brand">
+                <img src="../Icon.png" alt="" class="brand-logo">
+                <span class="brand-name">YouTube TLDW;</span>
+            </div>
+            <div class="topbar-actions" id="topbar-actions"></div>
+        </header>
+
+        <main id="main">
+            <!-- HOME -->
+            <section class="view view-home active" data-view="home">
+                <div class="hero">
+                    <h1 class="hero-title">Résume une vidéo YouTube</h1>
+                    <p class="hero-sub">Colle un lien ou partage une vidéo depuis l'app YouTube.</p>
+                </div>
+
+                <form id="url-form" class="url-form" autocomplete="off">
+                    <input type="url" id="url-input" placeholder="https://www.youtube.com/watch?v=…" inputmode="url" autocapitalize="none" autocorrect="off" spellcheck="false">
+                    <button type="submit" id="summarize-btn" class="primary-btn">Résumer</button>
+                </form>
+
+                <div id="result-area" class="result-area" hidden>
+                    <div class="result-meta" id="result-meta"></div>
+                    <div class="result-actions" id="result-actions"></div>
+                    <div class="result-body" id="result-body"></div>
+                </div>
+
+                <div id="loading-area" class="loading-area" hidden>
+                    <div class="spinner"></div>
+                    <div class="loading-text" id="loading-text">Récupération du transcript…</div>
+                </div>
+
+                <div id="error-area" class="error-area" hidden></div>
+            </section>
+
+            <!-- HISTORY -->
+            <section class="view view-history" data-view="history">
+                <div class="section-header">
+                    <h2>Historique</h2>
+                    <button id="clear-history-btn" class="ghost-btn">Tout effacer</button>
+                </div>
+                <ul id="history-list" class="history-list"></ul>
+                <p id="history-empty" class="empty-state">Aucun résumé pour le moment.</p>
+            </section>
+
+            <!-- SETTINGS -->
+            <section class="view view-settings" data-view="settings">
+                <h2>Réglages</h2>
+                <form id="settings-form" class="settings-form">
+                    <label class="field">
+                        <span>Service AI</span>
+                        <select name="aiService">
+                            <option value="gemini">Google Gemini</option>
+                            <option value="openai" disabled>OpenAI (bientôt)</option>
+                            <option value="openrouter" disabled>OpenRouter (bientôt)</option>
+                        </select>
+                    </label>
+
+                    <label class="field">
+                        <span>Clé API</span>
+                        <input type="password" name="apiKey" placeholder="AIza…" autocapitalize="none" autocorrect="off" spellcheck="false">
+                    </label>
+
+                    <label class="field">
+                        <span>Instructions personnalisées (optionnel)</span>
+                        <textarea name="userPrompt" rows="4" placeholder="Ex. Réponds en français, ajoute une section « points clés »…"></textarea>
+                    </label>
+
+                    <div class="field-actions">
+                        <button type="submit" class="primary-btn">Enregistrer</button>
+                        <span id="settings-status" class="settings-status"></span>
+                    </div>
+                </form>
+
+                <div class="about">
+                    <p>YouTube TLDW; — version <span id="app-version">1.0</span></p>
+                    <p class="muted">Extension Safari et Share Extension fonctionnent avec la même clé API.</p>
+                </div>
+            </section>
+        </main>
+
+        <nav id="tabbar">
+            <button class="tab active" data-tab="home">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8v10a2 2 0 01-2 2h-3v-7H10v7H7a2 2 0 01-2-2V11z"/></svg>
+                <span>Accueil</span>
+            </button>
+            <button class="tab" data-tab="history">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                <span>Historique</span>
+            </button>
+            <button class="tab" data-tab="settings">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33h.01a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v.01a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                <span>Réglages</span>
+            </button>
+        </nav>
+
+        <div id="toast" class="toast"></div>
+    </div>
 </body>
 </html>
