@@ -124,6 +124,9 @@ class ViewController: PlatformViewController, WKNavigationDelegate, WKScriptMess
         webView.evaluateJavaScript("window.platform = 'ios'; window.dispatchEvent(new Event('platformready'));")
 #elseif os(macOS)
         webView.evaluateJavaScript("window.platform = 'mac'; window.dispatchEvent(new Event('platformready'));")
+        if let window = webView.window {
+            window.contentMinSize = NSSize(width: 380, height: 500)
+        }
 #endif
         if let pending = AppDeepLink.shared.consume() {
             deliverDeepLinkToWeb(url: pending)
