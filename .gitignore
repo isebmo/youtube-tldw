@@ -4,3 +4,4 @@ xcuserdata/
 *.xcuserstate
 xcschememanagement.plist
 .wrangler/
+build/
