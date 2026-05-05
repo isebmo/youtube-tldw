@@ -1,0 +1,71 @@
+{
+  "extName": { "message": "YouTube TLDW;" },
+  "extDescription": { "message": "Résume des vidéos YouTube à l'aide de l'IA" },
+
+  "optionsPageTitle": { "message": "YouTube TLDW; — Options" },
+  "optionsHeading": { "message": "Options de l'extension" },
+  "aiServiceLabel": { "message": "Service d'IA :" },
+  "serviceOpenAI": { "message": "OpenAI" },
+  "serviceOpenRouter": { "message": "OpenRouter" },
+  "apiKeyLabelGemini": { "message": "Clé API Gemini :" },
+  "apiKeyLabelOpenAI": { "message": "Clé API OpenAI :" },
+  "apiKeyLabelOpenRouter": { "message": "Clé API OpenRouter :" },
+  "apiKeyPlaceholder": { "message": "Saisis ta clé API" },
+  "openrouterModelLabel": { "message": "Modèle OpenRouter :" },
+  "openrouterModelPlaceholder": { "message": "google/gemini-2.5-flash" },
+  "openrouterModelHint": { "message": "Laisse vide pour utiliser le modèle par défaut. Voir openrouter.ai/models pour les identifiants disponibles." },
+  "additionalInstructionsLabel": { "message": "Instructions supplémentaires (optionnel) :" },
+  "additionalInstructionsPlaceholder": { "message": "Ex. Réponds en français et ajoute une section « points clés »" },
+  "additionalInstructionsHint": { "message": "Ces instructions seront ajoutées au prompt de base." },
+  "saveSettings": { "message": "Enregistrer" },
+  "settingsSaved": { "message": "Options enregistrées." },
+  "buyMeCoffee": { "message": "Offrir un café" },
+
+  "panelTitle": { "message": "Résumé vidéo" },
+  "copyToClipboardTitle": { "message": "Copier dans le presse-papiers" },
+  "exportMarkdownTitle": { "message": "Exporter en Markdown (Shift+clic pour copier)" },
+  "closeTitle": { "message": "Fermer" },
+  "thinking": { "message": "Réflexion…" },
+  "welcomeMessage": { "message": "Bienvenue ! Sélectionne une action ci-dessous pour commencer." },
+  "askPlaceholder": { "message": "Pose une question sur la vidéo…" },
+  "askTitle": { "message": "Envoyer" },
+  "summarize": { "message": "Résumer" },
+  "showTranscript": { "message": "Voir le transcript" },
+  "summarizeVideoTitle": { "message": "Résumer la vidéo" },
+  "copiedToast": { "message": "Copié !" },
+  "fetchingTranscript": { "message": "Récupération du transcript…" },
+  "aiAnalyzing": { "message": "L'IA analyse…" },
+  "apiKeyNotSet": { "message": "Clé API non configurée." },
+  "openOptions": { "message": "Ouvrir les options" },
+  "errorPrefix": {
+    "message": "Erreur : $MSG$",
+    "placeholders": { "msg": { "content": "$1" } }
+  },
+  "apiKeyNotSetLong": { "message": "Clé API non configurée. Configure-la dans les options de l'extension." },
+  "nothingToExport": { "message": "Rien à exporter pour l'instant." },
+  "markdownCopied": { "message": "Markdown copié !" },
+  "markdownExported": { "message": "Markdown exporté !" },
+  "untitledVideo": { "message": "Vidéo sans titre" },
+  "transcriptErrorPrefix": {
+    "message": "Erreur de récupération du transcript : $MSG$",
+    "placeholders": { "msg": { "content": "$1" } }
+  },
+  "modelPrefix": {
+    "message": "Modèle : $NAME$",
+    "placeholders": { "name": { "content": "$1" } }
+  },
+
+  "errApiKeyMissing": { "message": "Clé API manquante. Configure-la dans les options de l'extension." },
+  "errUnsupportedService": {
+    "message": "Service d'IA non pris en charge : $SERVICE$",
+    "placeholders": { "service": { "content": "$1" } }
+  },
+  "errNoSummary": {
+    "message": "Aucun résumé renvoyé par $SERVICE$.",
+    "placeholders": { "service": { "content": "$1" } }
+  },
+  "errNoAnswer": {
+    "message": "Aucune réponse renvoyée par $SERVICE$.",
+    "placeholders": { "service": { "content": "$1" } }
+  }
+}

@@ -45,9 +45,8 @@ class TranscriptFetcher {
     }
 
     static _decodeHtmlEntities(text) {
-        const textarea = document.createElement('textarea');
-        textarea.innerHTML = text;
-        return textarea.value;
+        const doc = new DOMParser().parseFromString(text, 'text/html');
+        return doc.body.textContent || '';
     }
 
     static _formatTimestamp(seconds) {
@@ -172,26 +171,32 @@ class YouTubeSummarizerUI {
         return window.location.pathname === '/watch' && new URLSearchParams(window.location.search).has('v');
     }
 
+    _setHTMLSafe(element, htmlString) {
+        const doc = new DOMParser().parseFromString(htmlString, 'text/html');
+        element.replaceChildren(...Array.from(doc.body.childNodes));
+    }
+
     injectSidebar() {
         if (document.getElementById(this.sidebarId)) return;
 
         const sidebar = document.createElement('div');
         sidebar.id = this.sidebarId;
         const logoUrl = chrome.runtime.getURL('logo.png');
-        sidebar.innerHTML = `
+        const t = (k) => chrome.i18n.getMessage(k) || k;
+        this._setHTMLSafe(sidebar, `
             <div id="yt-summarizer-panel-header">
                 <div style="display:flex; align-items:center; gap:10px;">
                     <img src="${logoUrl}" style="width:24px; height:24px; border-radius:4px; object-fit:cover;">
-                    <span id="yt-summarizer-panel-title">Video Summary</span>
+                    <span id="yt-summarizer-panel-title">${t('panelTitle')}</span>
                 </div>
                 <div id="yt-summarizer-panel-actions">
-                    <button id="yts-copy-btn" class="panel-action-btn" title="Copy to clipboard">
+                    <button id="yts-copy-btn" class="panel-action-btn" title="${t('copyToClipboardTitle')}">
                         <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
                     </button>
-                    <button id="yts-export-btn" class="panel-action-btn" title="Export as Markdown (Shift+click to copy)">
+                    <button id="yts-export-btn" class="panel-action-btn" title="${t('exportMarkdownTitle')}">
                         <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
                     </button>
-                    <button id="yts-close-sidebar" class="panel-action-btn" title="Close">
+                    <button id="yts-close-sidebar" class="panel-action-btn" title="${t('closeTitle')}">
                         <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
                     </button>
                 </div>
@@ -200,26 +205,26 @@ class YouTubeSummarizerUI {
                 <div id="yts-display-area">
                     <div class="yts-loading-container" style="display:none;">
                         <div class="yts-spinner"></div>
-                        <div class="yts-loading-text">Thinking...</div>
+                        <div class="yts-loading-text">${t('thinking')}</div>
                     </div>
-                    <div id="yts-text-content">Welcome! Select an action below to start.</div>
+                    <div id="yts-text-content">${t('welcomeMessage')}</div>
                 </div>
             </div>
             <div id="yt-summarizer-panel-footer">
                 <div id="yts-qa-input-container">
-                    <input type="text" id="yts-question-input" placeholder="Ask a question about the video..." />
-                    <button id="yts-ask-btn" class="yts-ask-btn" title="Ask">
+                    <input type="text" id="yts-question-input" placeholder="${t('askPlaceholder')}" />
+                    <button id="yts-ask-btn" class="yts-ask-btn" title="${t('askTitle')}">
                         <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                     </button>
                 </div>
                 <button id="yts-summarize-btn" class="yts-primary-btn">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14h-4v-2h4v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
-                    Summarize
+                    ${t('summarize')}
                 </button>
-                <button id="yts-transcript-btn" class="yts-secondary-btn">Show Transcript</button>
+                <button id="yts-transcript-btn" class="yts-secondary-btn">${t('showTranscript')}</button>
             </div>
-            <div id="yts-toast">Copied to clipboard!</div>
-        `;
+            <div id="yts-toast">${t('copiedToast')}</div>
+        `);
 
         document.body.appendChild(sidebar);
 
@@ -244,7 +249,12 @@ class YouTubeSummarizerUI {
             fab.id = this.headerBtnContainerId;
             fab.className = 'yts-mobile-fab';
             const logoUrl = chrome.runtime.getURL('logo.png');
-            fab.innerHTML = `<img src="${logoUrl}" style="width:24px;height:24px;border-radius:4px;">`;
+            const fabImg = document.createElement('img');
+            fabImg.src = logoUrl;
+            fabImg.style.width = '24px';
+            fabImg.style.height = '24px';
+            fabImg.style.borderRadius = '4px';
+            fab.replaceChildren(fabImg);
             fab.addEventListener('click', () => this.openSidebar());
             document.body.appendChild(fab);
             return;
@@ -258,12 +268,13 @@ class YouTubeSummarizerUI {
         container.id = this.headerBtnContainerId;
         container.className = 'yts-header-integration';
         const logoUrl = chrome.runtime.getURL('logo.png');
-        container.innerHTML = `
-            <button class="yts-pill-btn" title="Summarize Video">
+        const t = (k) => chrome.i18n.getMessage(k) || k;
+        this._setHTMLSafe(container, `
+            <button class="yts-pill-btn" title="${t('summarizeVideoTitle')}">
                 <img src="${logoUrl}">
-                Summarize
+                ${t('summarize')}
             </button>
-        `;
+        `);
 
         // Insert before notifications
         target.parentNode.insertBefore(container, target);
@@ -307,14 +318,14 @@ class YouTubeSummarizerUI {
 
     resetSidebarContent() {
         const textArea = document.getElementById('yts-text-content');
-        if (textArea) textArea.textContent = 'Welcome! Select an action below to start.';
+        if (textArea) textArea.textContent = chrome.i18n.getMessage('welcomeMessage');
         this.cachedTranscript = null;
         this.cachedSummary = null;
         this.qaHistory = [];
         this.setLoading(false);
     }
 
-    setLoading(isLoading, text = "Thinking...") {
+    setLoading(isLoading, text = chrome.i18n.getMessage('thinking')) {
         const loader = document.querySelector('.yts-loading-container');
         const textContent = document.getElementById('yts-text-content');
         const loaderText = document.querySelector('.yts-loading-text');
@@ -330,12 +341,12 @@ class YouTubeSummarizerUI {
     }
 
     async handleShowTranscript() {
-        this.setLoading(true, "Fetching transcript...");
+        this.setLoading(true, chrome.i18n.getMessage('fetchingTranscript'));
         try {
             const segments = await TranscriptFetcher.getTranscript();
             this.cachedTranscript = segments;
             const container = document.getElementById('yts-text-content');
-            container.innerHTML = '';
+            container.replaceChildren();
             const transcriptContent = document.createElement('div');
             transcriptContent.className = 'yts-transcript-content';
             segments.forEach(seg => {
@@ -357,26 +368,45 @@ class YouTubeSummarizerUI {
             });
             container.appendChild(transcriptContent);
         } catch (error) {
-            document.getElementById('yts-text-content').textContent = "Error: " + error.message;
+            document.getElementById('yts-text-content').textContent = chrome.i18n.getMessage('errorPrefix', [error.message]);
         } finally {
             this.setLoading(false);
         }
     }
 
-    async handleSummarize() {
-        this.setLoading(true, "AI is analyzing...");
+    async _loadSettings() {
+        const stored = await chrome.storage.sync.get({ userPrompt: '', aiService: 'gemini' });
+        let apiKey = '';
         try {
-            const settings = await chrome.storage.sync.get({ apiKey: '', userPrompt: '', aiService: 'gemini' });
+            const res = await this._sendMessage({ action: "getApiKey" });
+            apiKey = res?.apiKey || '';
+        } catch (e) {
+            console.warn('Keychain read failed:', e?.message);
+        }
+        return { apiKey, userPrompt: stored.userPrompt, aiService: stored.aiService };
+    }
+
+    async handleSummarize() {
+        this.setLoading(true, chrome.i18n.getMessage('aiAnalyzing'));
+        try {
+            const settings = await this._loadSettings();
             if (!settings.apiKey) {
-                document.getElementById('yts-text-content').innerHTML = `
-                    <div style="text-align:center; padding: 20px;">
-                        <p>API Key not set.</p>
-                        <button id="yts-open-opts" class="yts-secondary-btn" style="margin-top:10px;">Open Options</button>
-                    </div>
-                `;
-                document.getElementById('yts-open-opts').addEventListener('click', () => {
+                const wrapper = document.createElement('div');
+                wrapper.style.textAlign = 'center';
+                wrapper.style.padding = '20px';
+                const msg = document.createElement('p');
+                msg.textContent = chrome.i18n.getMessage('apiKeyNotSet');
+                const btn = document.createElement('button');
+                btn.id = 'yts-open-opts';
+                btn.className = 'yts-secondary-btn';
+                btn.style.marginTop = '10px';
+                btn.textContent = chrome.i18n.getMessage('openOptions');
+                btn.addEventListener('click', () => {
                     chrome.runtime.sendMessage({ action: "openOptions" });
                 });
+                wrapper.appendChild(msg);
+                wrapper.appendChild(btn);
+                document.getElementById('yts-text-content').replaceChildren(wrapper);
                 return;
             }
 
@@ -392,10 +422,10 @@ class YouTubeSummarizerUI {
 
             if (response.error) throw new Error(response.error);
             this.cachedSummary = response.summary;
-            const modelBadge = response.model ? `<div class="yts-model-badge">Model: ${response.model}</div>` : '';
-            document.getElementById('yts-text-content').innerHTML = modelBadge + this.renderMarkdown(response.summary);
+            const modelBadge = response.model ? `<div class="yts-model-badge">${chrome.i18n.getMessage('modelPrefix', [response.model])}</div>` : '';
+            this._setHTMLSafe(document.getElementById('yts-text-content'), modelBadge + this.renderMarkdown(response.summary));
         } catch (error) {
-            document.getElementById('yts-text-content').textContent = "Error: " + error.message;
+            document.getElementById('yts-text-content').textContent = chrome.i18n.getMessage('errorPrefix', [error.message]);
         } finally {
             this.setLoading(false);
         }
@@ -409,11 +439,11 @@ class YouTubeSummarizerUI {
         input.value = '';
 
         if (!this.cachedTranscript) {
-            this.setLoading(true, "Fetching transcript...");
+            this.setLoading(true, chrome.i18n.getMessage('fetchingTranscript'));
             try {
                 this.cachedTranscript = await TranscriptFetcher.getTranscript();
             } catch (error) {
-                document.getElementById('yts-text-content').textContent = "Error fetching transcript: " + error.message;
+                document.getElementById('yts-text-content').textContent = chrome.i18n.getMessage('transcriptErrorPrefix', [error.message]);
                 this.setLoading(false);
                 return;
             }
@@ -421,12 +451,12 @@ class YouTubeSummarizerUI {
         }
 
         this.appendQABubble('question', question);
-        const loadingId = this.appendQABubble('loading', 'Thinking...');
+        const loadingId = this.appendQABubble('loading', chrome.i18n.getMessage('thinking'));
 
         try {
-            const settings = await chrome.storage.sync.get({ apiKey: '', userPrompt: '', aiService: 'gemini' });
+            const settings = await this._loadSettings();
             if (!settings.apiKey) {
-                this.replaceQABubble(loadingId, 'answer', 'API Key not set. Please configure it in the extension options.');
+                this.replaceQABubble(loadingId, 'answer', chrome.i18n.getMessage('apiKeyNotSetLong'));
                 return;
             }
 
@@ -444,7 +474,7 @@ class YouTubeSummarizerUI {
             this.qaHistory.push({ question, answer: response.answer });
             this.replaceQABubble(loadingId, 'answer', response.answer, response.model);
         } catch (error) {
-            this.replaceQABubble(loadingId, 'answer', 'Error: ' + error.message);
+            this.replaceQABubble(loadingId, 'answer', chrome.i18n.getMessage('errorPrefix', [error.message]));
         }
     }
 
@@ -465,7 +495,10 @@ class YouTubeSummarizerUI {
         if (type === 'question') {
             bubble.textContent = content;
         } else if (type === 'loading') {
-            bubble.innerHTML = '<div class="yts-qa-spinner"></div> ' + content;
+            const spinner = document.createElement('div');
+            spinner.className = 'yts-qa-spinner';
+            bubble.appendChild(spinner);
+            bubble.appendChild(document.createTextNode(' ' + content));
         }
 
         container.appendChild(bubble);
@@ -478,8 +511,8 @@ class YouTubeSummarizerUI {
         const bubble = document.getElementById(id);
         if (!bubble) return;
         bubble.className = `yts-qa-bubble yts-qa-${type}`;
-        const modelBadge = model ? `<div class="yts-model-badge" style="margin-bottom:8px;">Model: ${model}</div>` : '';
-        bubble.innerHTML = modelBadge + this.renderMarkdown(content);
+        const modelBadge = model ? `<div class="yts-model-badge" style="margin-bottom:8px;">${chrome.i18n.getMessage('modelPrefix', [model])}</div>` : '';
+        this._setHTMLSafe(bubble, modelBadge + this.renderMarkdown(content));
         document.getElementById('yt-summarizer-panel-content').scrollTop =
             document.getElementById('yt-summarizer-panel-content').scrollHeight;
     }
@@ -556,7 +589,7 @@ class YouTubeSummarizerUI {
         if (!content || content.startsWith('Welcome')) return;
 
         navigator.clipboard.writeText(content).then(() => {
-            this.showToast('Copied to clipboard!');
+            this.showToast(chrome.i18n.getMessage('copiedToast'));
         });
     }
 
@@ -570,7 +603,7 @@ class YouTubeSummarizerUI {
     getVideoMetadata() {
         const title = document.querySelector('meta[property="og:title"]')?.content
             || document.title.replace(' - YouTube', '').trim()
-            || 'Untitled Video';
+            || chrome.i18n.getMessage('untitledVideo');
         const url = window.location.href;
         const date = document.querySelector('meta[itemprop="datePublished"]')?.content
             || new Date().toISOString().split('T')[0];
@@ -636,7 +669,7 @@ class YouTubeSummarizerUI {
 
     async exportToMarkdown(event) {
         if (!this.cachedSummary && !this.cachedTranscript && this.qaHistory.length === 0) {
-            this.showToast('Nothing to export yet');
+            this.showToast(chrome.i18n.getMessage('nothingToExport'));
             return;
         }
 
@@ -646,11 +679,11 @@ class YouTubeSummarizerUI {
 
         if (event.shiftKey) {
             navigator.clipboard.writeText(markdown).then(() => {
-                this.showToast('Markdown copied to clipboard!');
+                this.showToast(chrome.i18n.getMessage('markdownCopied'));
             });
         } else {
             await this.downloadFile(filename, markdown);
-            this.showToast('Markdown exported!');
+            this.showToast(chrome.i18n.getMessage('markdownExported'));
         }
     }
 }

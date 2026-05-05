@@ -380,11 +380,11 @@ import AppIntents
 
 @available(iOS 16.0, macOS 13.0, *)
 struct SummarizeVideoIntent: AppIntent {
-    static var title: LocalizedStringResource = "Résumer une vidéo YouTube"
-    static var description = IntentDescription("Ouvre YouTube TLDW; et génère le résumé d'une vidéo YouTube à partir de son URL.")
+    static var title: LocalizedStringResource = "Summarize a YouTube video"
+    static var description = IntentDescription("Opens YouTube TLDW; and summarizes a YouTube video from its URL.")
     static var openAppWhenRun: Bool = true
 
-    @Parameter(title: "URL de la vidéo", description: "Le lien d'une vidéo YouTube (youtube.com/watch?v=… ou youtu.be/…)")
+    @Parameter(title: "Video URL", description: "The link to a YouTube video (youtube.com/watch?v=… or youtu.be/…)")
     var videoURL: URL
 
     @MainActor
@@ -407,11 +407,10 @@ struct TLDWAppShortcuts: AppShortcutsProvider {
         AppShortcut(
             intent: SummarizeVideoIntent(),
             phrases: [
-                "Résume cette vidéo dans \(.applicationName)",
-                "Résumer YouTube avec \(.applicationName)",
-                "Summarize this video in \(.applicationName)"
+                "Summarize this video in \(.applicationName)",
+                "Summarize YouTube with \(.applicationName)"
             ],
-            shortTitle: "Résumer une vidéo",
+            shortTitle: "Summarize a video",
             systemImageName: "play.rectangle.on.rectangle"
         )
     }

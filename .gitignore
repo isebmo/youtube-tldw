@@ -5,3 +5,10 @@ xcuserdata/
 xcschememanagement.plist
 .wrangler/
 build/
+*.zip
+*.xpi
+*.crx
+*.ipa
+*.pkg
+*.xcarchive
+firefox-ext-yt/.amo-upload-uuid

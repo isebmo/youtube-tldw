@@ -1,14 +1,17 @@
 {
     "manifest_version": 3,
-    "name": "YouTube TLDW;",
+    "name": "__MSG_extName__",
     "version": "1.1.0",
-    "description": "Summarize YouTube videos using AI API",
+    "description": "__MSG_extDescription__",
+    "default_locale": "en",
     "permissions": [
         "storage"
     ],
     "host_permissions": [
         "https://*.youtube.com/*",
-        "https://generativelanguage.googleapis.com/*"
+        "https://generativelanguage.googleapis.com/*",
+        "https://api.openai.com/*",
+        "https://openrouter.ai/*"
     ],
     "background": {
         "service_worker": "background.js"
@@ -28,7 +31,7 @@
         }
     ],
     "action": {
-        "default_title": "YouTube TLDW;",
+        "default_title": "__MSG_extName__",
         "default_icon": "icons/icon-48.png"
     },
     "icons": {

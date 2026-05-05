@@ -1,3 +1,166 @@
+// ----- i18n ----------------------------------------------------------------
+const I18N_DICT = {
+    en: {
+        "home.title": "Summarize a YouTube video",
+        "home.sub": "Paste a link or share a video from the YouTube app.",
+        "home.summarize": "Summarize",
+        "loading.transcript": "Fetching transcript…",
+        "loading.summarizing": "Generating summary with {service}…",
+        "history.title": "History",
+        "history.clearAll": "Clear all",
+        "history.empty": "No summaries yet.",
+        "history.confirmClear": "Clear all history?",
+        "history.open": "Open",
+        "history.copy": "Copy",
+        "history.delete": "Delete",
+        "history.defaultTitle": "Video",
+        "settings.title": "Settings",
+        "settings.language": "Language",
+        "settings.languageAuto": "Automatic (system)",
+        "settings.aiService": "AI service",
+        "settings.apiKey": "API key",
+        "settings.openrouterModel": "OpenRouter model",
+        "settings.openrouterHint": "Leave empty to use the default. See openrouter.ai/models for available IDs.",
+        "settings.customInstructions": "Custom instructions (optional)",
+        "settings.customInstructionsPlaceholder": "E.g. Reply in English, add a “key points” section…",
+        "settings.save": "Save",
+        "settings.saved": "Saved.",
+        "settings.upgradeBtn": "Upgrade to Premium",
+        "settings.restoreBtn": "Restore purchase",
+        "settings.apiKeyMissing": "Set your API key in Settings.",
+        "trial.premium": "Premium · unlimited access",
+        "trial.active": "Free trial · {days} day{plural} left",
+        "trial.expired": "Trial expired · Premium required",
+        "trial.upgradePriced": "Upgrade to Premium · {price}",
+        "paywall.expiredTitle": "Free trial ended",
+        "paywall.expiredSub": "To keep summarizing videos, unlock YouTube TLDW; Premium.",
+        "paywall.upgradeTitle": "Upgrade to Premium",
+        "paywall.upgradeSub": "Unlimited summaries, one-time purchase.",
+        "paywall.buy": "Buy Premium",
+        "paywall.buyPriced": "Buy Premium · {price}",
+        "paywall.restore": "Restore purchases",
+        "paywall.purchasing": "Purchasing…",
+        "toast.premiumActivated": "Premium activated. Thank you!",
+        "toast.purchaseCanceled": "Purchase canceled.",
+        "toast.purchaseRestored": "Purchase restored.",
+        "toast.noPurchase": "No purchase found.",
+        "toast.summaryCopied": "Summary copied.",
+        "result.copy": "Copy",
+        "result.viewYT": "View on YouTube",
+        "about.versionPrefix": "YouTube TLDW; — version",
+        "about.sharedKey": "The Safari extension uses the same API key.",
+        "tab.home": "Home",
+        "tab.history": "History",
+        "tab.settings": "Settings",
+        "error.prefix": "Error: {msg}",
+        "error.apiKeyMissing": "API key missing. Go to Settings.",
+        "error.unsupportedService": "Unsupported AI service: {service}",
+        "error.noSummary": "{service} returned no summary.",
+        "error.invalidYTLink": "Invalid YouTube link.",
+        "error.cantLoadYT": "Could not load the YouTube page.",
+        "error.cantFindKey": "Could not find the InnerTube key.",
+        "error.innertubeStatus": "InnerTube API returned {status}",
+        "error.noCaptions": "This video has no captions.",
+        "error.videoUnavailable": "Video unavailable."
+    },
+    fr: {
+        "home.title": "Résumer une vidéo YouTube",
+        "home.sub": "Colle un lien ou partage une vidéo depuis l'app YouTube.",
+        "home.summarize": "Résumer",
+        "loading.transcript": "Récupération du transcript…",
+        "loading.summarizing": "Génération du résumé avec {service}…",
+        "history.title": "Historique",
+        "history.clearAll": "Tout effacer",
+        "history.empty": "Aucun résumé pour l'instant.",
+        "history.confirmClear": "Effacer tout l'historique ?",
+        "history.open": "Ouvrir",
+        "history.copy": "Copier",
+        "history.delete": "Supprimer",
+        "history.defaultTitle": "Vidéo",
+        "settings.title": "Réglages",
+        "settings.language": "Langue",
+        "settings.languageAuto": "Automatique (système)",
+        "settings.aiService": "Service d'IA",
+        "settings.apiKey": "Clé API",
+        "settings.openrouterModel": "Modèle OpenRouter",
+        "settings.openrouterHint": "Laisse vide pour utiliser le modèle par défaut. Voir openrouter.ai/models pour les identifiants disponibles.",
+        "settings.customInstructions": "Instructions personnalisées (optionnel)",
+        "settings.customInstructionsPlaceholder": "Ex. Réponds en français, ajoute une section « points clés »…",
+        "settings.save": "Enregistrer",
+        "settings.saved": "Enregistré.",
+        "settings.upgradeBtn": "Passer à Premium",
+        "settings.restoreBtn": "Restaurer l'achat",
+        "settings.apiKeyMissing": "Configure ta clé API dans Réglages.",
+        "trial.premium": "Premium · accès illimité",
+        "trial.active": "Essai gratuit · {days} jour{plural} restant{plural}",
+        "trial.expired": "Essai expiré · Premium requis",
+        "trial.upgradePriced": "Passer à Premium · {price}",
+        "paywall.expiredTitle": "Essai gratuit terminé",
+        "paywall.expiredSub": "Pour continuer à résumer des vidéos, débloque YouTube TLDW; Premium.",
+        "paywall.upgradeTitle": "Passer à Premium",
+        "paywall.upgradeSub": "Résumés illimités, achat unique.",
+        "paywall.buy": "Acheter Premium",
+        "paywall.buyPriced": "Acheter Premium · {price}",
+        "paywall.restore": "Restaurer les achats",
+        "paywall.purchasing": "Achat en cours…",
+        "toast.premiumActivated": "Premium activé. Merci !",
+        "toast.purchaseCanceled": "Achat annulé.",
+        "toast.purchaseRestored": "Achat restauré.",
+        "toast.noPurchase": "Aucun achat trouvé.",
+        "toast.summaryCopied": "Résumé copié.",
+        "result.copy": "Copier",
+        "result.viewYT": "Voir sur YouTube",
+        "about.versionPrefix": "YouTube TLDW; — version",
+        "about.sharedKey": "L'extension Safari utilise la même clé API.",
+        "tab.home": "Accueil",
+        "tab.history": "Historique",
+        "tab.settings": "Réglages",
+        "error.prefix": "Erreur : {msg}",
+        "error.apiKeyMissing": "Clé API manquante. Va dans Réglages.",
+        "error.unsupportedService": "Service d'IA non pris en charge : {service}",
+        "error.noSummary": "Aucun résumé renvoyé par {service}.",
+        "error.invalidYTLink": "Lien YouTube invalide.",
+        "error.cantLoadYT": "Impossible de charger la page YouTube.",
+        "error.cantFindKey": "Impossible de trouver la clé InnerTube.",
+        "error.innertubeStatus": "L'API InnerTube a renvoyé {status}",
+        "error.noCaptions": "Cette vidéo n'a pas de sous-titres.",
+        "error.videoUnavailable": "Vidéo indisponible."
+    }
+};
+
+const I18N = {
+    locale: 'en',
+    resolveLocale(stored) {
+        if (stored && stored !== 'auto' && I18N_DICT[stored]) return stored;
+        const sys = (navigator.language || 'en').slice(0, 2).toLowerCase();
+        return I18N_DICT[sys] ? sys : 'en';
+    },
+    setLocale(stored) {
+        this.locale = this.resolveLocale(stored);
+        document.documentElement.lang = this.locale;
+    },
+    t(key, vars) {
+        const dict = I18N_DICT[this.locale] || I18N_DICT.en;
+        let str = dict[key] || I18N_DICT.en[key] || key;
+        if (vars) {
+            for (const k in vars) {
+                str = str.replace(new RegExp('\\{' + k + '\\}', 'g'), vars[k]);
+            }
+        }
+        return str;
+    },
+    hydrate(root) {
+        (root || document).querySelectorAll('[data-i18n]').forEach(el => {
+            el.textContent = this.t(el.dataset.i18n);
+        });
+        (root || document).querySelectorAll('[data-i18n-attr-placeholder]').forEach(el => {
+            el.placeholder = this.t(el.dataset.i18nAttrPlaceholder);
+        });
+    }
+};
+
+const t = (key, vars) => I18N.t(key, vars);
+
 // ----- IAP / Trial bridges -------------------------------------------------
 const Entitlement = {
     cache: null,
@@ -48,7 +211,7 @@ function openExternal(url) {
 
 const Settings = {
     KEY: 'tldw.settings',
-    defaults: { aiService: 'gemini', apiKey: '', userPrompt: '' },
+    defaults: { aiService: 'gemini', apiKey: '', userPrompt: '', openrouterModel: '', locale: 'auto' },
     cache: null,
     load() {
         if (this.cache) return this.cache;
@@ -104,13 +267,13 @@ class TranscriptFetcher {
             const m = u.pathname.match(/\/(shorts|embed|live)\/([^/?#]+)/);
             if (m) return m[2];
         } catch (e) {}
-        throw new Error("Lien YouTube invalide.");
+        throw new Error(t('error.invalidYTLink'));
     }
 
     static async _fetchInnertubeApiKey(html) {
         const m = html.match(/"INNERTUBE_API_KEY":\s*"([a-zA-Z0-9_-]+)"/);
         if (m && m[1]) return m[1];
-        throw new Error("Impossible de trouver la clé InnerTube.");
+        throw new Error(t('error.cantFindKey'));
     }
 
     static async _fetchInnertubeData(videoId, apiKey) {
@@ -119,7 +282,7 @@ class TranscriptFetcher {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ context: this.INNERTUBE_CONTEXT, videoId })
         });
-        if (!res.ok) throw new Error(`InnerTube API a retourné ${res.status}`);
+        if (!res.ok) throw new Error(t('error.innertubeStatus', { status: res.status }));
         return res.json();
     }
 
@@ -144,18 +307,18 @@ class TranscriptFetcher {
         const videoId = this.extractVideoId(videoUrl);
 
         const pageRes = await nativeFetch(`https://www.youtube.com/watch?v=${videoId}`);
-        if (!pageRes.ok) throw new Error("Impossible de charger la page YouTube.");
+        if (!pageRes.ok) throw new Error(t('error.cantLoadYT'));
         const pageHtml = await pageRes.text();
         const apiKey = await this._fetchInnertubeApiKey(pageHtml);
         const data = await this._fetchInnertubeData(videoId, apiKey);
 
         const status = data.playabilityStatus?.status;
         if (status && status !== 'OK') {
-            throw new Error(data.playabilityStatus?.reason || "Vidéo indisponible.");
+            throw new Error(data.playabilityStatus?.reason || t('error.videoUnavailable'));
         }
 
         const captions = data.captions?.playerCaptionsTracklistRenderer?.captionTracks;
-        if (!captions || captions.length === 0) throw new Error("Cette vidéo n'a pas de sous-titres.");
+        if (!captions || captions.length === 0) throw new Error(t('error.noCaptions'));
 
         const track = captions.find(t => t.languageCode === 'fr')
             || captions.find(t => t.languageCode === 'en')
@@ -178,7 +341,7 @@ class TranscriptFetcher {
             });
         }
 
-        const title = (data.videoDetails?.title) || `Vidéo ${videoId}`;
+        const title = (data.videoDetails?.title) || `Video ${videoId}`;
         const author = data.videoDetails?.author || '';
         return { videoId, title, author, segments };
     }
@@ -190,12 +353,15 @@ Transcript:
 {{transcript}}`;
 
 async function summarize(transcript, settings) {
-    if (!settings.apiKey) throw new Error("Clé API manquante. Va dans Réglages.");
+    if (!settings.apiKey) throw new Error(t('error.apiKeyMissing'));
     let prompt = FIXED_PROMPT.replace('{{transcript}}', transcript);
     if (settings.userPrompt) prompt += "\n\nAdditional instructions:\n" + settings.userPrompt;
 
     if (settings.aiService === 'gemini') return summarizeGemini(settings.apiKey, prompt);
-    throw new Error("Service AI non supporté: " + settings.aiService);
+    if (settings.aiService === 'openai' || settings.aiService === 'openrouter') {
+        return summarizeOpenAICompatible(settings.aiService, settings.apiKey, prompt, settings.openrouterModel);
+    }
+    throw new Error(t('error.unsupportedService', { service: settings.aiService }));
 }
 
 async function summarizeGemini(apiKey, prompt) {
@@ -212,8 +378,41 @@ async function summarizeGemini(apiKey, prompt) {
     }
     const data = await res.json();
     const summary = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!summary) throw new Error("Gemini n'a renvoyé aucun résumé.");
+    if (!summary) throw new Error(t('error.noSummary', { service: 'Gemini' }));
     return { summary, model: 'gemini-3.1-flash-lite-preview' };
+}
+
+async function summarizeOpenAICompatible(service, apiKey, prompt, openrouterModel) {
+    let url, model;
+    if (service === 'openai') {
+        url = 'https://api.openai.com/v1/chat/completions';
+        model = 'gpt-5-mini';
+    } else {
+        url = 'https://openrouter.ai/api/v1/chat/completions';
+        model = (openrouterModel || '').trim() || 'google/gemini-2.5-flash';
+    }
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+    };
+    if (service === 'openrouter') {
+        headers['HTTP-Referer'] = 'https://github.com/sebastienmouret/firefox-ext-yt';
+        headers['X-Title'] = 'YouTube TLDW';
+    }
+    const res = await nativeFetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }] })
+    });
+    if (!res.ok) {
+        let msg = `${service} ${res.status}`;
+        try { const j = await res.json(); msg = j.error?.message || msg; } catch (e) {}
+        throw new Error(msg);
+    }
+    const data = await res.json();
+    const summary = data.choices?.[0]?.message?.content;
+    if (!summary) throw new Error(t('error.noSummary', { service }));
+    return { summary, model };
 }
 
 function renderMarkdown(text) {
@@ -250,6 +449,8 @@ const App = {
     el(id) { return document.getElementById(id); },
 
     init() {
+        I18N.setLocale(Settings.load().locale);
+        I18N.hydrate();
         this.bindNav();
         this.bindHome();
         this.bindSettings();
@@ -270,15 +471,15 @@ const App = {
         if (upgradeBtn) {
             upgradeBtn.addEventListener('click', async () => {
                 upgradeBtn.disabled = true;
-                upgradeBtn.textContent = "Achat en cours…";
+                upgradeBtn.textContent = t('paywall.purchasing');
                 const res = await purchasePremium();
                 Entitlement.cache = res;
                 this.renderTrialBadge(res || {});
                 upgradeBtn.disabled = false;
                 if (res && res.premium) {
-                    this.showToast("Premium activé. Merci !");
+                    this.showToast(t('toast.premiumActivated'));
                 } else if (res && res.success === false) {
-                    this.showToast("Achat annulé.");
+                    this.showToast(t('toast.purchaseCanceled'));
                 }
             });
         }
@@ -287,7 +488,7 @@ const App = {
                 const res = await restorePurchases();
                 Entitlement.cache = res;
                 this.renderTrialBadge(res || {});
-                this.showToast(res && res.premium ? "Achat restauré." : "Aucun achat trouvé.");
+                this.showToast(res && res.premium ? t('toast.purchaseRestored') : t('toast.noPurchase'));
             });
         }
     },
@@ -298,33 +499,35 @@ const App = {
         const upgradeBtn = this.el('upgrade-btn');
         if (!status) return;
         if (ent.premium) {
-            status.textContent = "Premium · accès illimité";
+            status.textContent = t('trial.premium');
             status.className = "trial-status trial-premium";
             if (upgradeRow) upgradeRow.hidden = true;
         } else if (ent.trialActive) {
-            status.textContent = `Essai gratuit · ${ent.trialDaysRemaining} jour${ent.trialDaysRemaining > 1 ? 's' : ''} restant${ent.trialDaysRemaining > 1 ? 's' : ''}`;
+            const days = ent.trialDaysRemaining;
+            status.textContent = t('trial.active', { days, plural: days > 1 ? 's' : '' });
             status.className = "trial-status trial-active";
             if (upgradeRow) upgradeRow.hidden = false;
         } else {
-            status.textContent = "Essai expiré · Premium requis";
+            status.textContent = t('trial.expired');
             status.className = "trial-status trial-expired";
             if (upgradeRow) upgradeRow.hidden = false;
         }
         if (upgradeBtn) {
-            upgradeBtn.textContent = ent.price ? `Passer à Premium · ${ent.price}` : "Passer à Premium";
+            upgradeBtn.textContent = ent.price ? t('trial.upgradePriced', { price: ent.price }) : t('settings.upgradeBtn');
         }
     },
 
     showPaywall(ent) {
         const expired = ent && !ent.premium && !ent.trialActive;
         const price = (ent && ent.price) || "";
+        const buyLabel = price ? t('paywall.buyPriced', { price }) : t('paywall.buy');
         const html = `
             <div class="paywall">
                 <div class="paywall-badge">${expired ? "⏱" : "✨"}</div>
-                <h2 class="paywall-title">${expired ? "Essai gratuit terminé" : "Passe à Premium"}</h2>
-                <p class="paywall-sub">${expired ? "Pour continuer à résumer des vidéos, débloque YouTube TLDW; Premium." : "Accès illimité aux résumés, achat unique."}</p>
-                <button id="paywall-buy" class="primary-btn">${price ? `Acheter Premium · ${price}` : "Acheter Premium"}</button>
-                <button id="paywall-restore" class="ghost-btn">Restaurer mes achats</button>
+                <h2 class="paywall-title">${expired ? t('paywall.expiredTitle') : t('paywall.upgradeTitle')}</h2>
+                <p class="paywall-sub">${expired ? t('paywall.expiredSub') : t('paywall.upgradeSub')}</p>
+                <button id="paywall-buy" class="primary-btn">${buyLabel}</button>
+                <button id="paywall-restore" class="ghost-btn">${t('paywall.restore')}</button>
             </div>
         `;
         this.el('result-area').hidden = false;
@@ -334,25 +537,25 @@ const App = {
         this.el('paywall-buy').addEventListener('click', async () => {
             const btn = this.el('paywall-buy');
             btn.disabled = true;
-            btn.textContent = "Achat en cours…";
+            btn.textContent = t('paywall.purchasing');
             const res = await purchasePremium();
             this.renderTrialBadge(res || {});
             if (res && res.premium) {
-                this.showToast("Premium activé. Merci !");
+                this.showToast(t('toast.premiumActivated'));
                 this.el('result-area').hidden = true;
             } else if (res && res.success === false) {
                 btn.disabled = false;
-                btn.textContent = price ? `Acheter Premium · ${price}` : "Acheter Premium";
+                btn.textContent = buyLabel;
             }
         });
         this.el('paywall-restore').addEventListener('click', async () => {
             const res = await restorePurchases();
             this.renderTrialBadge(res || {});
             if (res && res.premium) {
-                this.showToast("Achat restauré.");
+                this.showToast(t('toast.purchaseRestored'));
                 this.el('result-area').hidden = true;
             } else {
-                this.showToast("Aucun achat trouvé.");
+                this.showToast(t('toast.noPurchase'));
             }
         });
     },
@@ -409,7 +612,7 @@ const App = {
         }
         const settings = Settings.load();
         if (!settings.apiKey) {
-            this.showToast("Configure ta clé API dans Réglages.");
+            this.showToast(t('settings.apiKeyMissing'));
             this.showView('settings');
             return;
         }
@@ -419,7 +622,7 @@ const App = {
         const loadingEl = this.el('loading-area');
         const loadingText = this.el('loading-text');
         loadingEl.hidden = false;
-        loadingText.textContent = "Récupération du transcript…";
+        loadingText.textContent = t('loading.transcript');
 
         let entry = { id: 't_' + Date.now(), createdAt: Date.now(), url };
 
@@ -430,7 +633,10 @@ const App = {
             entry.author = t.author;
             entry.transcript = TranscriptFetcher.toPlainText(t.segments);
 
-            loadingText.textContent = "Génération du résumé avec Gemini…";
+            const serviceLabel = settings.aiService === 'openai' ? 'OpenAI'
+                : settings.aiService === 'openrouter' ? 'OpenRouter'
+                : 'Gemini';
+            loadingText.textContent = t('loading.summarizing', { service: serviceLabel });
             const r = await summarize(entry.transcript, settings);
             entry.summary = r.summary;
             entry.model = r.model;
@@ -453,11 +659,11 @@ const App = {
         `;
 
         this.el('result-actions').innerHTML = `
-            <button class="icon-btn" id="copy-summary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copier</button>
-            <button class="icon-btn" id="open-yt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3h7v7"/><path d="M21 3l-9 9"/><path d="M21 14v5a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h5"/></svg>Voir sur YouTube</button>
+            <button class="icon-btn" id="copy-summary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>${t('result.copy')}</button>
+            <button class="icon-btn" id="open-yt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3h7v7"/><path d="M21 3l-9 9"/><path d="M21 14v5a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h5"/></svg>${t('result.viewYT')}</button>
         `;
         this.el('copy-summary').addEventListener('click', () => {
-            navigator.clipboard.writeText(entry.summary).then(() => this.showToast("Résumé copié."));
+            navigator.clipboard.writeText(entry.summary).then(() => this.showToast(t('toast.summaryCopied')));
         });
         this.el('open-yt').addEventListener('click', () => openExternal(entry.url));
 
@@ -467,37 +673,56 @@ const App = {
 
     showError(msg) {
         const e = this.el('error-area');
-        e.textContent = "Erreur : " + msg;
+        e.textContent = t('error.prefix', { msg });
         e.hidden = false;
     },
     hideError() { this.el('error-area').hidden = true; },
 
     bindSettings() {
-        this.el('settings-form').addEventListener('submit', (e) => {
+        const form = this.el('settings-form');
+        form.addEventListener('submit', (e) => {
             e.preventDefault();
             const data = new FormData(e.target);
+            const newLocale = data.get('locale') || 'auto';
             Settings.save({
+                locale: newLocale,
                 aiService: data.get('aiService'),
                 apiKey: (data.get('apiKey') || '').trim(),
-                userPrompt: (data.get('userPrompt') || '').trim()
+                userPrompt: (data.get('userPrompt') || '').trim(),
+                openrouterModel: (data.get('openrouterModel') || '').trim()
             });
+            I18N.setLocale(newLocale);
+            I18N.hydrate();
             const status = this.el('settings-status');
-            status.textContent = "Enregistré.";
+            status.textContent = t('settings.saved');
             setTimeout(() => { status.textContent = ''; }, 1800);
+            Entitlement.get().then((ent) => this.renderTrialBadge(ent || {}));
+            this.refreshHistoryList();
         });
+        form.aiService.addEventListener('change', (e) => {
+            this.toggleOpenRouterField(e.target.value);
+        });
+    },
+
+    toggleOpenRouterField(service) {
+        const field = this.el('openrouter-model-field');
+        if (field) field.hidden = service !== 'openrouter';
     },
 
     loadSettingsForm() {
         const s = Settings.load();
         const form = this.el('settings-form');
+        if (form.locale) form.locale.value = s.locale || 'auto';
         form.aiService.value = s.aiService;
         form.apiKey.value = s.apiKey;
         form.userPrompt.value = s.userPrompt;
+        if (form.openrouterModel) form.openrouterModel.value = s.openrouterModel || '';
+        this.toggleOpenRouterField(s.aiService);
     },
 
     bindHistory() {
         this.el('clear-history-btn').addEventListener('click', () => {
-            if (confirm("Effacer tout l'historique ?")) {
+            if (confirm(t('history.confirmClear'))) {
                 History.clear();
                 this.refreshHistoryList();
             }
@@ -513,7 +738,7 @@ const App = {
                 this.renderResult(entry);
                 this.showView('home');
             } else if (btn.dataset.action === 'copy') {
-                navigator.clipboard.writeText(entry.summary).then(() => this.showToast("Résumé copié."));
+                navigator.clipboard.writeText(entry.summary).then(() => this.showToast(t('toast.summaryCopied')));
             } else if (btn.dataset.action === 'delete') {
                 History.remove(id);
                 this.refreshHistoryList();
@@ -531,22 +756,23 @@ const App = {
             return;
         }
         empty.classList.remove('visible');
+        const dateLocale = I18N.locale === 'fr' ? 'fr-FR' : 'en-US';
         items.forEach(entry => {
             const li = document.createElement('li');
             li.className = 'history-item';
-            const date = new Date(entry.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+            const date = new Date(entry.createdAt).toLocaleDateString(dateLocale, { day: '2-digit', month: 'short', year: 'numeric' });
             const preview = (entry.summary || '').slice(0, 200).replace(/[#*`>\-\n]+/g, ' ').trim();
             li.innerHTML = `
-                <div class="title">${escapeText(entry.title || 'Vidéo')}</div>
+                <div class="title">${escapeText(entry.title || t('history.defaultTitle'))}</div>
                 <div class="meta">
                     <span>${date}</span>
                     ${entry.author ? `<span>· ${escapeText(entry.author)}</span>` : ''}
                 </div>
                 <div class="preview">${escapeText(preview)}</div>
                 <div class="history-actions">
-                    <button class="icon-btn" data-action="open" data-id="${entry.id}">Ouvrir</button>
-                    <button class="icon-btn" data-action="copy" data-id="${entry.id}">Copier</button>
-                    <button class="icon-btn" data-action="delete" data-id="${entry.id}">Supprimer</button>
+                    <button class="icon-btn" data-action="open" data-id="${entry.id}">${t('history.open')}</button>
+                    <button class="icon-btn" data-action="copy" data-id="${entry.id}">${t('history.copy')}</button>
+                    <button class="icon-btn" data-action="delete" data-id="${entry.id}">${t('history.delete')}</button>
                 </div>
             `;
             list.appendChild(li);

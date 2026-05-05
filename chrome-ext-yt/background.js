@@ -14,6 +14,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 });
 
+async function getOpenRouterModel() {
+    const { openrouterModel } = await chrome.storage.sync.get({ openrouterModel: '' });
+    return openrouterModel || 'google/gemini-2.5-flash';
+}
+
 // Fixed prompt - not user configurable
 const FIXED_PROMPT = `Please summarize the transcription of the YouTube video. Be precise and structured; the summary should allow the reader to avoid watching the video while still understanding all the points and details discussed. Give me the summary without any other sentence, the summary must be formatted in markdown.
 
@@ -27,7 +32,7 @@ Transcript:
 
 async function summarizeVideo(transcript, aiService, apiKey, userPrompt) {
     if (!apiKey) {
-        throw new Error("API Key is missing. Please set it in the extension options.");
+        throw new Error(chrome.i18n.getMessage("errApiKeyMissing"));
     }
 
     // Use fixed prompt + user additions
@@ -41,7 +46,7 @@ async function summarizeVideo(transcript, aiService, apiKey, userPrompt) {
     } else if (aiService === 'openai' || aiService === 'openrouter') {
         return summarizeWithOpenAICompatible(aiService, apiKey, promptText);
     } else {
-        throw new Error("Unsupported AI service: " + aiService);
+        throw new Error(chrome.i18n.getMessage("errUnsupportedService", [aiService]));
     }
 }
 
@@ -67,7 +72,7 @@ async function summarizeWithGemini(apiKey, promptText) {
 
     const data = await response.json();
     const summary = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!summary) throw new Error("No summary returned from Gemini.");
+    if (!summary) throw new Error(chrome.i18n.getMessage("errNoSummary", ["Gemini"]));
     return { summary, model: 'gemini-3.1-flash-lite-preview' };
 }
 
@@ -76,10 +81,10 @@ async function summarizeWithOpenAICompatible(service, apiKey, promptText) {
 
     if (service === 'openai') {
         apiUrl = 'https://api.openai.com/v1/chat/completions';
-        model = 'gpt-4o'; // Default model
+        model = 'gpt-5-mini'; // Default model
     } else {
         apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
-        model = 'google/gemini-2.0-flash-001'; // Default recommended OpenRouter model
+        model = await getOpenRouterModel();
     }
 
     const payload = {
@@ -113,13 +118,13 @@ async function summarizeWithOpenAICompatible(service, apiKey, promptText) {
 
     const data = await response.json();
     const summary = data.choices?.[0]?.message?.content;
-    if (!summary) throw new Error(`No summary returned from ${service}.`);
+    if (!summary) throw new Error(chrome.i18n.getMessage("errNoSummary", [service]));
     return { summary, model };
 }
 
 async function askQuestion(transcript, question, qaHistory, aiService, apiKey, userPrompt) {
     if (!apiKey) {
-        throw new Error("API Key is missing. Please set it in the extension options.");
+        throw new Error(chrome.i18n.getMessage("errApiKeyMissing"));
     }
 
     let systemContext = QA_PROMPT.replace('{{transcript}}', transcript);
@@ -132,7 +137,7 @@ async function askQuestion(transcript, question, qaHistory, aiService, apiKey, u
     } else if (aiService === 'openai' || aiService === 'openrouter') {
         return askWithOpenAICompatible(aiService, apiKey, systemContext, question, qaHistory);
     } else {
-        throw new Error("Unsupported AI service: " + aiService);
+        throw new Error(chrome.i18n.getMessage("errUnsupportedService", [aiService]));
     }
 }
 
@@ -165,7 +170,7 @@ async function askWithGemini(apiKey, systemContext, question, qaHistory) {
 
     const data = await response.json();
     const answer = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!answer) throw new Error("No answer returned from Gemini.");
+    if (!answer) throw new Error(chrome.i18n.getMessage("errNoAnswer", ["Gemini"]));
     return { answer, model: 'gemini-3.1-flash-lite-preview' };
 }
 
@@ -173,10 +178,10 @@ async function askWithOpenAICompatible(service, apiKey, systemContext, question,
     let apiUrl, model;
     if (service === 'openai') {
         apiUrl = 'https://api.openai.com/v1/chat/completions';
-        model = 'gpt-4o';
+        model = 'gpt-5-mini';
     } else {
         apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
-        model = 'google/gemini-2.0-flash-001';
+        model = await getOpenRouterModel();
     }
 
     const messages = [{ role: "system", content: systemContext }];
@@ -208,6 +213,6 @@ async function askWithOpenAICompatible(service, apiKey, systemContext, question,
 
     const data = await response.json();
     const answer = data.choices?.[0]?.message?.content;
-    if (!answer) throw new Error(`No answer returned from ${service}.`);
+    if (!answer) throw new Error(chrome.i18n.getMessage("errNoAnswer", [service]));
     return { answer, model };
 }

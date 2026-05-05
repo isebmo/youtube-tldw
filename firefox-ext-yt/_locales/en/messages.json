@@ -1,0 +1,71 @@
+{
+  "extName": { "message": "YouTube TLDW;" },
+  "extDescription": { "message": "Summarize YouTube videos using AI" },
+
+  "optionsPageTitle": { "message": "YouTube TLDW; Options" },
+  "optionsHeading": { "message": "Extension Options" },
+  "aiServiceLabel": { "message": "AI Service:" },
+  "serviceOpenAI": { "message": "OpenAI" },
+  "serviceOpenRouter": { "message": "OpenRouter" },
+  "apiKeyLabelGemini": { "message": "Gemini API Key:" },
+  "apiKeyLabelOpenAI": { "message": "OpenAI API Key:" },
+  "apiKeyLabelOpenRouter": { "message": "OpenRouter API Key:" },
+  "apiKeyPlaceholder": { "message": "Enter your API key" },
+  "openrouterModelLabel": { "message": "OpenRouter model:" },
+  "openrouterModelPlaceholder": { "message": "google/gemini-2.5-flash" },
+  "openrouterModelHint": { "message": "Leave empty to use the default. See openrouter.ai/models for available IDs." },
+  "additionalInstructionsLabel": { "message": "Additional instructions (optional):" },
+  "additionalInstructionsPlaceholder": { "message": "e.g. Reply in English and add a key points section" },
+  "additionalInstructionsHint": { "message": "These instructions will be added to the base prompt." },
+  "saveSettings": { "message": "Save settings" },
+  "settingsSaved": { "message": "Options saved." },
+  "buyMeCoffee": { "message": "Buy me a coffee" },
+
+  "panelTitle": { "message": "Video summary" },
+  "copyToClipboardTitle": { "message": "Copy to clipboard" },
+  "exportMarkdownTitle": { "message": "Export as Markdown (Shift+click to copy)" },
+  "closeTitle": { "message": "Close" },
+  "thinking": { "message": "Thinking…" },
+  "welcomeMessage": { "message": "Welcome! Select an action below to start." },
+  "askPlaceholder": { "message": "Ask a question about the video…" },
+  "askTitle": { "message": "Ask" },
+  "summarize": { "message": "Summarize" },
+  "showTranscript": { "message": "Show transcript" },
+  "summarizeVideoTitle": { "message": "Summarize video" },
+  "copiedToast": { "message": "Copied to clipboard!" },
+  "fetchingTranscript": { "message": "Fetching transcript…" },
+  "aiAnalyzing": { "message": "AI is analyzing…" },
+  "apiKeyNotSet": { "message": "API key not set." },
+  "openOptions": { "message": "Open options" },
+  "errorPrefix": {
+    "message": "Error: $MSG$",
+    "placeholders": { "msg": { "content": "$1" } }
+  },
+  "apiKeyNotSetLong": { "message": "API key not set. Please configure it in the extension options." },
+  "nothingToExport": { "message": "Nothing to export yet." },
+  "markdownCopied": { "message": "Markdown copied to clipboard!" },
+  "markdownExported": { "message": "Markdown exported!" },
+  "untitledVideo": { "message": "Untitled video" },
+  "transcriptErrorPrefix": {
+    "message": "Error fetching transcript: $MSG$",
+    "placeholders": { "msg": { "content": "$1" } }
+  },
+  "modelPrefix": {
+    "message": "Model: $NAME$",
+    "placeholders": { "name": { "content": "$1" } }
+  },
+
+  "errApiKeyMissing": { "message": "API key is missing. Please set it in the extension options." },
+  "errUnsupportedService": {
+    "message": "Unsupported AI service: $SERVICE$",
+    "placeholders": { "service": { "content": "$1" } }
+  },
+  "errNoSummary": {
+    "message": "No summary returned from $SERVICE$.",
+    "placeholders": { "service": { "content": "$1" } }
+  },
+  "errNoAnswer": {
+    "message": "No answer returned from $SERVICE$.",
+    "placeholders": { "service": { "content": "$1" } }
+  }
+}

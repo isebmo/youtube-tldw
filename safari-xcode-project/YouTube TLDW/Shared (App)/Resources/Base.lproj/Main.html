@@ -21,13 +21,13 @@
             <!-- HOME -->
             <section class="view view-home active" data-view="home">
                 <div class="hero">
-                    <h1 class="hero-title">Résume une vidéo YouTube</h1>
-                    <p class="hero-sub">Colle un lien ou partage une vidéo depuis l'app YouTube.</p>
+                    <h1 class="hero-title" data-i18n="home.title">Summarize a YouTube video</h1>
+                    <p class="hero-sub" data-i18n="home.sub">Paste a link or share a video from the YouTube app.</p>
                 </div>
 
                 <form id="url-form" class="url-form" autocomplete="off">
                     <input type="url" id="url-input" placeholder="https://www.youtube.com/watch?v=…" inputmode="url" autocapitalize="none" autocorrect="off" spellcheck="false">
-                    <button type="submit" id="summarize-btn" class="primary-btn">Résumer</button>
+                    <button type="submit" id="summarize-btn" class="primary-btn" data-i18n="home.summarize">Summarize</button>
                 </form>
 
                 <div id="result-area" class="result-area" hidden>
@@ -38,7 +38,7 @@
 
                 <div id="loading-area" class="loading-area" hidden>
                     <div class="spinner"></div>
-                    <div class="loading-text" id="loading-text">Récupération du transcript…</div>
+                    <div class="loading-text" id="loading-text" data-i18n="loading.transcript">Fetching transcript…</div>
                 </div>
 
                 <div id="error-area" class="error-area" hidden></div>
@@ -47,50 +47,65 @@
             <!-- HISTORY -->
             <section class="view view-history" data-view="history">
                 <div class="section-header">
-                    <h2>Historique</h2>
-                    <button id="clear-history-btn" class="ghost-btn">Tout effacer</button>
+                    <h2 data-i18n="history.title">History</h2>
+                    <button id="clear-history-btn" class="ghost-btn" data-i18n="history.clearAll">Clear all</button>
                 </div>
                 <ul id="history-list" class="history-list"></ul>
-                <p id="history-empty" class="empty-state">Aucun résumé pour le moment.</p>
+                <p id="history-empty" class="empty-state" data-i18n="history.empty">No summaries yet.</p>
             </section>
 
             <!-- SETTINGS -->
             <section class="view view-settings" data-view="settings">
-                <h2>Réglages</h2>
+                <h2 data-i18n="settings.title">Settings</h2>
                 <div class="trial-status" id="trial-status">…</div>
                 <div class="upgrade-row" id="upgrade-row" hidden>
-                    <button id="upgrade-btn" class="primary-btn">Passer à Premium</button>
-                    <button id="restore-btn" class="ghost-btn">Restaurer un achat</button>
+                    <button id="upgrade-btn" class="primary-btn" data-i18n="settings.upgradeBtn">Upgrade to Premium</button>
+                    <button id="restore-btn" class="ghost-btn" data-i18n="settings.restoreBtn">Restore purchase</button>
                 </div>
                 <form id="settings-form" class="settings-form">
                     <label class="field">
-                        <span>Service AI</span>
-                        <select name="aiService">
-                            <option value="gemini">Google Gemini</option>
-                            <option value="openai" disabled>OpenAI (bientôt)</option>
-                            <option value="openrouter" disabled>OpenRouter (bientôt)</option>
+                        <span data-i18n="settings.language">Language</span>
+                        <select name="locale">
+                            <option value="auto" data-i18n="settings.languageAuto">Automatic (system)</option>
+                            <option value="en">English</option>
+                            <option value="fr">Français</option>
                         </select>
                     </label>
 
                     <label class="field">
-                        <span>Clé API</span>
-                        <input type="password" name="apiKey" placeholder="AIza…" autocapitalize="none" autocorrect="off" spellcheck="false">
+                        <span data-i18n="settings.aiService">AI service</span>
+                        <select name="aiService">
+                            <option value="gemini">Google Gemini</option>
+                            <option value="openai">OpenAI</option>
+                            <option value="openrouter">OpenRouter</option>
+                        </select>
                     </label>
 
                     <label class="field">
-                        <span>Instructions personnalisées (optionnel)</span>
-                        <textarea name="userPrompt" rows="4" placeholder="Ex. Réponds en français, ajoute une section « points clés »…"></textarea>
+                        <span data-i18n="settings.apiKey">API key</span>
+                        <input type="password" name="apiKey" placeholder="AIza…" autocapitalize="none" autocorrect="off" spellcheck="false">
+                    </label>
+
+                    <label class="field" id="openrouter-model-field" hidden>
+                        <span data-i18n="settings.openrouterModel">OpenRouter model</span>
+                        <input type="text" name="openrouterModel" placeholder="google/gemini-2.5-flash" autocapitalize="none" autocorrect="off" spellcheck="false">
+                        <small class="muted" data-i18n="settings.openrouterHint">Leave empty to use the default. See openrouter.ai/models for available IDs.</small>
+                    </label>
+
+                    <label class="field">
+                        <span data-i18n="settings.customInstructions">Custom instructions (optional)</span>
+                        <textarea name="userPrompt" rows="4" data-i18n-attr-placeholder="settings.customInstructionsPlaceholder" placeholder="E.g. Reply in English, add a “key points” section…"></textarea>
                     </label>
 
                     <div class="field-actions">
-                        <button type="submit" class="primary-btn">Enregistrer</button>
+                        <button type="submit" class="primary-btn" data-i18n="settings.save">Save</button>
                         <span id="settings-status" class="settings-status"></span>
                     </div>
                 </form>
 
                 <div class="about">
-                    <p>YouTube TLDW; — version <span id="app-version">1.0</span></p>
-                    <p class="muted">Extension Safari et Share Extension fonctionnent avec la même clé API.</p>
+                    <p><span data-i18n="about.versionPrefix">YouTube TLDW; — version</span> <span id="app-version">1.0</span></p>
+                    <p class="muted" data-i18n="about.sharedKey">The Safari extension uses the same API key.</p>
                 </div>
             </section>
         </main>
@@ -98,15 +113,15 @@
         <nav id="tabbar">
             <button class="tab active" data-tab="home">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8v10a2 2 0 01-2 2h-3v-7H10v7H7a2 2 0 01-2-2V11z"/></svg>
-                <span>Accueil</span>
+                <span data-i18n="tab.home">Home</span>
             </button>
             <button class="tab" data-tab="history">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-                <span>Historique</span>
+                <span data-i18n="tab.history">History</span>
             </button>
             <button class="tab" data-tab="settings">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33h.01a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v.01a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-                <span>Réglages</span>
+                <span data-i18n="tab.settings">Settings</span>
             </button>
         </nav>
 

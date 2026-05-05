@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <link rel="icon" type="image/png" href="logo.png">
-  <title>YouTube TLDW; Options</title>
+  <title data-i18n="optionsPageTitle">YouTube TLDW; Options</title>
   <style>
     body {
       font-family: -apple-system, 'SF Pro Text', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -256,33 +256,39 @@
     <div class="logo-container">
       <img src="logo.png" alt="Logo" class="logo-img">
     </div>
-    <h1>Extension Options</h1>
+    <h1 data-i18n="optionsHeading">Extension Options</h1>
 
     <div class="form-group">
-      <label for="aiService">AI Service:</label>
+      <label for="aiService" data-i18n="aiServiceLabel">AI Service:</label>
       <select id="aiService">
         <option value="gemini">Google Gemini</option>
-        <option value="openai" disabled>OpenAI (Coming Soon)</option>
-        <option value="openrouter" disabled>OpenRouter (Coming Soon)</option>
+        <option value="openai" data-i18n="serviceOpenAI">OpenAI</option>
+        <option value="openrouter" data-i18n="serviceOpenRouter">OpenRouter</option>
       </select>
     </div>
 
     <div class="form-group">
-      <label for="apiKey" id="apiKeyLabel">Gemini API Key:</label>
-      <input type="password" id="apiKey" placeholder="Enter your API Key">
+      <label for="apiKey" id="apiKeyLabel" data-i18n="apiKeyLabelGemini">Gemini API Key:</label>
+      <input type="password" id="apiKey" data-i18n-attr-placeholder="apiKeyPlaceholder" placeholder="Enter your API Key">
+    </div>
+
+    <div class="form-group" id="openrouterModelGroup" style="display: none;">
+      <label for="openrouterModel" data-i18n="openrouterModelLabel">OpenRouter model:</label>
+      <input type="text" id="openrouterModel" data-i18n-attr-placeholder="openrouterModelPlaceholder" placeholder="google/gemini-2.5-flash">
+      <small data-i18n="openrouterModelHint">Leave empty to use the default. See openrouter.ai/models for available IDs.</small>
     </div>
 
     <div class="form-group">
-      <label for="userPrompt">Additional Instructions (optional):</label>
-      <textarea id="userPrompt" placeholder="e.g. Summary should be in french"></textarea>
-      <small>These instructions will be added to the base prompt.</small>
+      <label for="userPrompt" data-i18n="additionalInstructionsLabel">Additional Instructions (optional):</label>
+      <textarea id="userPrompt" data-i18n-attr-placeholder="additionalInstructionsPlaceholder" placeholder="e.g. Summary should be in french"></textarea>
+      <small data-i18n="additionalInstructionsHint">These instructions will be added to the base prompt.</small>
     </div>
 
-    <button id="save">Save Settings</button>
+    <button id="save" data-i18n="saveSettings">Save Settings</button>
     <div id="status"></div>
 
     <a href="https://paypal.me/papageek" target="_blank" class="coffee-btn">
-      <span style="font-size: 20px;">☕</span> Buy me a Coffee
+      <span style="font-size: 20px;">☕</span> <span data-i18n="buyMeCoffee">Buy me a Coffee</span>
     </a>
 
     <div class="credits-container">
