@@ -627,11 +627,11 @@ const App = {
         let entry = { id: 't_' + Date.now(), createdAt: Date.now(), url };
 
         try {
-            const t = await TranscriptFetcher.getTranscript(url);
-            entry.videoId = t.videoId;
-            entry.title = t.title;
-            entry.author = t.author;
-            entry.transcript = TranscriptFetcher.toPlainText(t.segments);
+            const tr = await TranscriptFetcher.getTranscript(url);
+            entry.videoId = tr.videoId;
+            entry.title = tr.title;
+            entry.author = tr.author;
+            entry.transcript = TranscriptFetcher.toPlainText(tr.segments);
 
             const serviceLabel = settings.aiService === 'openai' ? 'OpenAI'
                 : settings.aiService === 'openrouter' ? 'OpenRouter'
