@@ -50,7 +50,7 @@ async function summarizeVideo(transcript, aiService, apiKey, userPrompt) {
 }
 
 async function summarizeWithGemini(apiKey, promptText) {
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${apiKey}`;
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`;
 
     const payload = {
         contents: [{
@@ -72,7 +72,7 @@ async function summarizeWithGemini(apiKey, promptText) {
     const data = await response.json();
     const summary = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!summary) throw new Error("No summary returned from Gemini.");
-    return { summary, model: 'gemini-3.1-flash-lite-preview' };
+    return { summary, model: 'gemini-3.1-flash-lite' };
 }
 
 async function summarizeWithOpenAICompatible(service, apiKey, promptText) {
@@ -141,7 +141,7 @@ async function askQuestion(transcript, question, qaHistory, aiService, apiKey, u
 }
 
 async function askWithGemini(apiKey, systemContext, question, qaHistory) {
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${apiKey}`;
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`;
 
     const contents = [];
     if (qaHistory.length === 0) {
@@ -170,7 +170,7 @@ async function askWithGemini(apiKey, systemContext, question, qaHistory) {
     const data = await response.json();
     const answer = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!answer) throw new Error("No answer returned from Gemini.");
-    return { answer, model: 'gemini-3.1-flash-lite-preview' };
+    return { answer, model: 'gemini-3.1-flash-lite' };
 }
 
 async function askWithOpenAICompatible(service, apiKey, systemContext, question, qaHistory) {

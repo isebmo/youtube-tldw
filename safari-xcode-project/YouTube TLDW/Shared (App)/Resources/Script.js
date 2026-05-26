@@ -365,7 +365,7 @@ async function summarize(transcript, settings) {
 }
 
 async function summarizeGemini(apiKey, prompt) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`;
     const res = await nativeFetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -379,7 +379,7 @@ async function summarizeGemini(apiKey, prompt) {
     const data = await res.json();
     const summary = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!summary) throw new Error(t('error.noSummary', { service: 'Gemini' }));
-    return { summary, model: 'gemini-3.1-flash-lite-preview' };
+    return { summary, model: 'gemini-3.1-flash-lite' };
 }
 
 async function summarizeOpenAICompatible(service, apiKey, prompt, openrouterModel) {
