@@ -31,6 +31,11 @@ if [[ "$CHANNEL" == "listed" && -f amo-metadata.json ]]; then
   EXTRA+=(--amo-metadata amo-metadata.json)
 fi
 
+# web-ext signs the raw directory; run package.sh first for its validations
+# (jq on manifest/_locales, node syntax checks, locale key parity).
+echo "==> Validating via scripts/package.sh"
+scripts/package.sh firefox
+
 echo "==> Signing & submitting Firefox extension (channel=$CHANNEL)"
 # `web-ext sign` will time out waiting for AMO review on listed channel; that's expected.
 # The submission itself is registered as soon as upload completes.

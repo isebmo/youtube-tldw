@@ -28,11 +28,13 @@ set -a; source .env; set +a
 : "${CHROME_REFRESH_TOKEN:?missing}"
 : "${CHROME_EXTENSION_ID:?missing}"
 
-ZIP="chrome-ext-yt.zip"
+# Build through package.sh so the upload gets its validations
+# (jq on manifest/_locales, node syntax checks, locale key parity).
+echo "==> Building via scripts/package.sh"
+scripts/package.sh chrome
 
-echo "==> Building $ZIP"
-rm -f "$ZIP"
-( cd chrome-ext-yt && zip -rq "../$ZIP" . -x ".*" )
+VERSION=$(jq -r '.version' chrome-ext-yt/manifest.json)
+ZIP="dist/chrome-ext-yt-v${VERSION}.zip"
 
 echo "==> Uploading to Chrome Web Store"
 npx --yes chrome-webstore-upload-cli upload \

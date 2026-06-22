@@ -541,7 +541,8 @@ class YouTubeSummarizerUI {
         } else {
             content = document.getElementById('yts-text-content').textContent;
         }
-        if (!content || content.startsWith('Welcome')) return;
+        const welcome = chrome.i18n.getMessage('welcomeMessage') || 'welcomeMessage';
+        if (!content || content.trim() === welcome) return;
 
         navigator.clipboard.writeText(content).then(() => {
             this.showToast(chrome.i18n.getMessage('copiedToast'));

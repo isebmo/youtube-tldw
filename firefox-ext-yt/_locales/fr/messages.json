@@ -67,5 +67,8 @@
   "errNoAnswer": {
     "message": "Aucune réponse renvoyée par $SERVICE$.",
     "placeholders": { "service": { "content": "$1" } }
+  },
+  "permissionDenied": {
+    "message": "L'accès à l'API de ce service IA n'a pas été accordé. Retour à Gemini."
   }
 }

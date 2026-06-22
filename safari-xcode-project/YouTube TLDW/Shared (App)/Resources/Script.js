@@ -144,7 +144,8 @@ const I18N = {
         let str = dict[key] || I18N_DICT.en[key] || key;
         if (vars) {
             for (const k in vars) {
-                str = str.replace(new RegExp('\\{' + k + '\\}', 'g'), vars[k]);
+                // Function replacement: keeps '$&'-style patterns in values literal.
+                str = str.replace(new RegExp('\\{' + k + '\\}', 'g'), () => vars[k]);
             }
         }
         return str;

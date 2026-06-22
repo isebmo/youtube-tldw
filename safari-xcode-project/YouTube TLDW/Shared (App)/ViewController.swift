@@ -4,6 +4,7 @@
 //
 
 import WebKit
+import Security
 
 #if os(iOS)
 import UIKit
@@ -139,7 +140,21 @@ class ViewController: PlatformViewController, WKNavigationDelegate, WKScriptMess
     }
 
     private func injectStoredSettings() {
-        let settings = UserDefaults(suiteName: appGroupID)?.dictionary(forKey: "tldw.settings") ?? [:]
+        var settings = UserDefaults(suiteName: appGroupID)?.dictionary(forKey: "tldw.settings") ?? [:]
+
+        // One-shot migration: move a legacy plaintext key from the App Group
+        // into the shared Keychain, where the Safari extension reads it.
+        if let legacy = settings["apiKey"] as? String, !legacy.isEmpty,
+           SharedKeychain.getApiKey() == nil,
+           SharedKeychain.setApiKey(legacy) {
+            settings.removeValue(forKey: "apiKey")
+            UserDefaults(suiteName: appGroupID)?.set(settings, forKey: "tldw.settings")
+        }
+
+        if let apiKey = SharedKeychain.getApiKey(), !apiKey.isEmpty {
+            settings["apiKey"] = apiKey
+        }
+
         guard let data = try? JSONSerialization.data(withJSONObject: settings),
               let json = String(data: data, encoding: .utf8) else { return }
         webView.evaluateJavaScript("window.__INITIAL_SETTINGS__ = \(json);", completionHandler: nil)
@@ -147,7 +162,16 @@ class ViewController: PlatformViewController, WKNavigationDelegate, WKScriptMess
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         if message.name == "saveSettings" {
-            if let dict = message.body as? [String: Any] {
+            if var dict = message.body as? [String: Any] {
+                // The API key lives in the shared Keychain (read by the Safari
+                // extension); everything else stays in the App Group.
+                if let apiKey = dict["apiKey"] as? String {
+                    if SharedKeychain.setApiKey(apiKey) {
+                        dict.removeValue(forKey: "apiKey")
+                    } else {
+                        NSLog("[App] Keychain write failed; keeping apiKey in App Group")
+                    }
+                }
                 UserDefaults(suiteName: appGroupID)?.set(dict, forKey: "tldw.settings")
                 NSLog("[App] settings saved to App Group")
             }
@@ -263,6 +287,68 @@ class ViewController: PlatformViewController, WKNavigationDelegate, WKScriptMess
 
 extension Notification.Name {
     static let tldwDeepLink = Notification.Name("tldwDeepLink")
+}
+
+// MARK: - Shared Keychain ----------------------------------------------------
+// Same item (service/account/access group, synchronizable) as
+// SafariWebExtensionHandler.swift in Shared (Extension) — keep both in sync so
+// the app and the Safari extension genuinely share the API key.
+
+enum SharedKeychain {
+    private static let service = "com.mouret.youtube-tldw"
+    private static let account = "apiKey"
+    private static let accessGroup = "2T8A23HDD8.com.mouret.youtube-tldw.shared"
+
+    private static func baseQuery() -> [String: Any] {
+        return [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+            kSecAttrAccessGroup as String: accessGroup,
+            kSecAttrSynchronizable as String: kCFBooleanTrue!,
+        ]
+    }
+
+    static func getApiKey() -> String? {
+        var query = baseQuery()
+        query[kSecMatchLimit as String] = kSecMatchLimitOne
+        query[kSecReturnData as String] = true
+
+        var result: CFTypeRef?
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+        guard status == errSecSuccess, let data = result as? Data else {
+            if status != errSecItemNotFound {
+                NSLog("[App] Keychain read failed: %d", status)
+            }
+            return nil
+        }
+        return String(data: data, encoding: .utf8)
+    }
+
+    static func setApiKey(_ apiKey: String) -> Bool {
+        guard let data = apiKey.data(using: .utf8) else { return false }
+        let query = baseQuery()
+
+        let updateStatus = SecItemUpdate(
+            query as CFDictionary,
+            [kSecValueData as String: data] as CFDictionary
+        )
+        if updateStatus == errSecSuccess { return true }
+        if updateStatus != errSecItemNotFound {
+            NSLog("[App] Keychain update failed: %d", updateStatus)
+            return false
+        }
+
+        var addQuery = query
+        addQuery[kSecValueData as String] = data
+        addQuery[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
+        let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
+        if addStatus != errSecSuccess {
+            NSLog("[App] Keychain add failed: %d", addStatus)
+            return false
+        }
+        return true
+    }
 }
 
 final class AppDeepLink {

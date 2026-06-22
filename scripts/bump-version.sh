@@ -19,6 +19,9 @@ MANIFESTS=(
   "firefox-ext-yt/manifest.json"
   "chrome-ext-yt/manifest.json"
   "safari-ext-yt/manifest.json"
+  # Xcode bundles this copy; sync-safari-xcode.sh keeps it aligned, but bump
+  # it here too so a bump alone never leaves the shipped version behind.
+  "safari-xcode-project/YouTube TLDW/Shared (Extension)/Resources/manifest.json"
 )
 
 current_version() {

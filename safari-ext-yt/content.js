@@ -375,15 +375,22 @@ class YouTubeSummarizerUI {
     }
 
     async _loadSettings() {
-        const stored = await chrome.storage.sync.get({ userPrompt: '', aiService: 'gemini' });
-        let apiKey = '';
-        try {
-            const res = await this._sendMessage({ action: "getApiKey" });
-            apiKey = res?.apiKey || '';
-        } catch (e) {
-            console.warn('Keychain read failed:', e?.message);
-        }
-        return { apiKey, userPrompt: stored.userPrompt, aiService: stored.aiService };
+        const [stored, keychainKey] = await Promise.all([
+            chrome.storage.sync.get({ userPrompt: '', aiService: 'gemini', apiKey: '' }),
+            this._sendMessage({ action: "getApiKey" })
+                .then(res => res?.apiKey || '')
+                .catch(e => {
+                    console.warn('Keychain read failed:', e?.message);
+                    return '';
+                })
+        ]);
+        // Fall back to the legacy storage.sync key for users who haven't opened
+        // the options page since the Keychain migration shipped.
+        return {
+            apiKey: keychainKey || stored.apiKey,
+            userPrompt: stored.userPrompt,
+            aiService: stored.aiService
+        };
     }
 
     async handleSummarize() {
@@ -586,7 +593,8 @@ class YouTubeSummarizerUI {
         } else {
             content = document.getElementById('yts-text-content').textContent;
         }
-        if (!content || content.startsWith('Welcome')) return;
+        const welcome = chrome.i18n.getMessage('welcomeMessage') || 'welcomeMessage';
+        if (!content || content.trim() === welcome) return;
 
         navigator.clipboard.writeText(content).then(() => {
             this.showToast(chrome.i18n.getMessage('copiedToast'));

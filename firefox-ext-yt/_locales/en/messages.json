@@ -67,5 +67,8 @@
   "errNoAnswer": {
     "message": "No answer returned from $SERVICE$.",
     "placeholders": { "service": { "content": "$1" } }
+  },
+  "permissionDenied": {
+    "message": "Access to this AI service's API was not granted. Reverting to Gemini."
   }
 }

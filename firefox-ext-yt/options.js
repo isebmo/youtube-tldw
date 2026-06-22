@@ -12,6 +12,33 @@ const localizeStatic = () => {
   });
 };
 
+// OpenAI/OpenRouter origins are optional_permissions: requesting them at
+// install time would disable the extension on update for existing users.
+const SERVICE_ORIGINS = {
+  openai: ['https://api.openai.com/*'],
+  openrouter: ['https://openrouter.ai/*']
+};
+
+// Must be called directly from a user-gesture handler (no await before it),
+// or Firefox rejects the request. Resolves true without prompting when the
+// permission is already granted.
+const requestServicePermission = (service) => {
+  const origins = SERVICE_ORIGINS[service];
+  if (!origins) return Promise.resolve(true);
+  return browser.permissions.request({ origins });
+};
+
+const showStatus = (message, kind) => {
+  const status = document.getElementById('status');
+  status.textContent = message;
+  status.className = kind;
+  status.style.display = 'block';
+  setTimeout(() => {
+    status.textContent = '';
+    status.style.display = 'none';
+  }, kind === 'success' ? 1500 : 3000);
+};
+
 const updateLabel = (service) => {
   const label = document.getElementById('apiKeyLabel');
   if (service === 'gemini') label.textContent = i18n('apiKeyLabelGemini');
@@ -27,15 +54,14 @@ const saveOptions = () => {
   const userPrompt = document.getElementById('userPrompt').value;
   const openrouterModel = document.getElementById('openrouterModel').value.trim();
 
-  browser.storage.sync.set({ aiService, apiKey, userPrompt, openrouterModel }).then(() => {
-    const status = document.getElementById('status');
-    status.textContent = i18n('settingsSaved');
-    status.className = 'success';
-    status.style.display = 'block';
-    setTimeout(() => {
-      status.textContent = '';
-      status.style.display = 'none';
-    }, 1500);
+  requestServicePermission(aiService).then((granted) => {
+    if (!granted) {
+      showStatus(i18n('permissionDenied'), 'error');
+      return;
+    }
+    browser.storage.sync.set({ aiService, apiKey, userPrompt, openrouterModel }).then(() => {
+      showStatus(i18n('settingsSaved'), 'success');
+    });
   });
 };
 
@@ -50,7 +76,15 @@ const restoreOptions = () => {
 };
 
 document.getElementById('aiService').addEventListener('change', (e) => {
-  updateLabel(e.target.value);
+  const service = e.target.value;
+  updateLabel(service);
+  requestServicePermission(service).then((granted) => {
+    if (!granted) {
+      e.target.value = 'gemini';
+      updateLabel('gemini');
+      showStatus(i18n('permissionDenied'), 'error');
+    }
+  });
 });
 
 document.addEventListener('DOMContentLoaded', () => {

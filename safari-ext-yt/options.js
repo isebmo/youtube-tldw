@@ -31,7 +31,10 @@ async function getApiKey() {
 }
 
 async function setApiKey(apiKey) {
-  await sendBg({ action: "setApiKey", apiKey });
+  const res = await sendBg({ action: "setApiKey", apiKey });
+  // Swift reports Keychain failures as {ok:false} without an error message;
+  // surface them so callers don't discard the storage.sync copy of the key.
+  if (!res.ok) throw new Error(i18n('errKeychainWriteFailed'));
 }
 
 const updateLabel = (service) => {
