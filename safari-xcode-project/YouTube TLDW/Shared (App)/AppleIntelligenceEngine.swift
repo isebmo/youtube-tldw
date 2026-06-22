@@ -89,7 +89,7 @@ enum AppleIntelligence {
             .joined(separator: "\n\n")
         return try await respondWithFallback(
             instructions: summaryInstructions(userPrompt: userPrompt, lang: lang),
-            prompt: "These are partial summaries of one YouTube video, in order. Merge them into a single coherent, structured markdown summary without repetition:\n\n\(joined)",
+            prompt: "Below are partial summaries of one YouTube video, in order. Produce ONE unified, structured markdown summary of the whole video. Do not mention that the input was split, and do not keep \"Part N\" labels; organize by topic instead.\n\n\(joined)",
             maxTokens: 900
         )
     }
