@@ -25,23 +25,63 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
             message = request?.userInfo?["message"]
         }
 
-        let payload = handle(message: message)
+        guard let dict = message as? [String: Any], let action = dict["action"] as? String else {
+            complete(context, ["error": "missing action"])
+            return
+        }
 
+        // Apple Intelligence actions are asynchronous; the rest are synchronous.
+        switch action {
+        case "aiAvailability":
+            let info = AppleIntelligence.availabilityInfo()
+            complete(context, ["available": info.available, "reason": info.reason as Any])
+
+        case "aiSummarize", "aiAsk":
+            guard #available(iOS 26.0, macOS 26.0, *) else {
+                complete(context, ["error": "Apple Intelligence requires iOS 26 / macOS 26"])
+                return
+            }
+            Task {
+                do {
+                    let payload: [String: Any]
+                    if action == "aiSummarize" {
+                        let text = try await AppleIntelligence.summarize(
+                            transcript: dict["transcript"] as? String ?? "",
+                            userPrompt: dict["userPrompt"] as? String,
+                            lang: dict["lang"] as? String)
+                        payload = ["summary": text, "model": AppleIntelligence.modelName]
+                    } else {
+                        let qa = dict["qaHistory"] as? [[String: String]] ?? []
+                        let text = try await AppleIntelligence.answer(
+                            question: dict["question"] as? String ?? "",
+                            transcript: dict["transcript"] as? String ?? "",
+                            qaHistory: qa,
+                            userPrompt: dict["userPrompt"] as? String,
+                            lang: dict["lang"] as? String)
+                        payload = ["answer": text, "model": AppleIntelligence.modelName]
+                    }
+                    self.complete(context, payload)
+                } catch {
+                    self.complete(context, ["error": error.localizedDescription])
+                }
+            }
+
+        default:
+            complete(context, handleSync(action: action, dict: dict))
+        }
+    }
+
+    private func complete(_ context: NSExtensionContext, _ payload: [String: Any]) {
         let response = NSExtensionItem()
         if #available(iOS 15.0, macOS 11.0, *) {
             response.userInfo = [SFExtensionMessageKey: payload]
         } else {
             response.userInfo = ["message": payload]
         }
-
         context.completeRequest(returningItems: [response], completionHandler: nil)
     }
 
-    private func handle(message: Any?) -> [String: Any] {
-        guard let dict = message as? [String: Any], let action = dict["action"] as? String else {
-            return ["error": "missing action"]
-        }
-
+    private func handleSync(action: String, dict: [String: Any]) -> [String: Any] {
         switch action {
         case "getApiKey":
             return ["apiKey": Self.getApiKey() as Any]

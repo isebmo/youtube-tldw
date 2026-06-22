@@ -44,6 +44,10 @@ const updateLabel = (service) => {
   else if (service === 'openrouter') label.textContent = i18n('apiKeyLabelOpenRouter');
   document.getElementById('openrouterModelGroup').style.display =
     service === 'openrouter' ? 'block' : 'none';
+  // Apple Intelligence runs on-device, so no API key is needed.
+  const isApple = service === 'apple';
+  document.getElementById('apiKeyGroup').style.display = isApple ? 'none' : 'block';
+  document.getElementById('appleHint').style.display = isApple ? 'block' : 'none';
 };
 
 const saveOptions = async () => {
@@ -110,6 +114,25 @@ const restoreOptions = async () => {
   }
 
   document.getElementById('apiKey').value = apiKey;
+
+  // Probe Apple Intelligence; disable the option when the device can't run it,
+  // and fall back to Gemini if it was the selected service.
+  try {
+    const avail = await sendBg({ action: 'aiAvailability' });
+    const appleOpt = document.querySelector('#aiService option[value="apple"]');
+    if (!avail.available) {
+      if (appleOpt) {
+        appleOpt.disabled = true;
+        appleOpt.textContent = i18n('serviceApple') + ' — ' + i18n('appleUnavailable');
+      }
+      if (document.getElementById('aiService').value === 'apple') {
+        document.getElementById('aiService').value = 'gemini';
+      }
+    }
+  } catch (e) {
+    console.warn('Apple Intelligence probe failed:', e.message);
+  }
+  updateLabel(document.getElementById('aiService').value);
 };
 
 document.getElementById('aiService').addEventListener('change', (e) => {

@@ -20,12 +20,12 @@ function nativeKeychain(message) {
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "summarize") {
-        summarizeVideo(request.transcript, request.aiService, request.apiKey, request.userPrompt)
+        summarizeVideo(request.transcript, request.aiService, request.apiKey, request.userPrompt, request.lang)
             .then(result => sendResponse({ summary: result.summary, model: result.model }))
             .catch(error => sendResponse({ error: error.message }));
         return true;
     } else if (request.action === "askQuestion") {
-        askQuestion(request.transcript, request.question, request.qaHistory, request.aiService, request.apiKey, request.userPrompt)
+        askQuestion(request.transcript, request.question, request.qaHistory, request.aiService, request.apiKey, request.userPrompt, request.lang)
             .then(result => sendResponse({ answer: result.answer, model: result.model }))
             .catch(error => sendResponse({ error: error.message }));
         return true;
@@ -39,6 +39,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             .then(res => sendResponse({ ok: !!res.ok }))
             .catch(error => sendResponse({ error: error.message }));
         return true;
+    } else if (request.action === "aiAvailability") {
+        nativeKeychain({ action: "aiAvailability" })
+            .then(res => sendResponse({ available: !!res.available, reason: res.reason || null }))
+            .catch(() => sendResponse({ available: false, reason: "bridge" }));
+        return true;
     } else if (request.action === "openOptions") {
         try {
             chrome.runtime.openOptionsPage();
@@ -46,6 +51,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             chrome.tabs.create({ url: chrome.runtime.getURL('options.html') });
         }
     }
+});
+
+// New installs default to Apple Intelligence when the device supports it, so the
+// extension works with no API key out of the box. An explicit prior choice wins.
+chrome.runtime.onInstalled.addListener(() => {
+    chrome.storage.sync.get({ aiService: null }, (items) => {
+        if (items.aiService) return;
+        nativeKeychain({ action: "aiAvailability" })
+            .then(res => { if (res && res.available) chrome.storage.sync.set({ aiService: 'apple' }); })
+            .catch(() => {});
+    });
 });
 
 async function getOpenRouterModel() {
@@ -64,7 +80,23 @@ const QA_PROMPT = `You are a helpful assistant answering questions about a YouTu
 Transcript:
 {{transcript}}`;
 
-async function summarizeVideo(transcript, aiService, apiKey, userPrompt) {
+// On-device Apple Intelligence: no API key, summarization runs natively.
+function summarizeWithAppleIntelligence(transcript, userPrompt, lang) {
+    return nativeKeychain({ action: "aiSummarize", transcript, userPrompt: userPrompt || "", lang: lang || "" })
+        .then(res => ({ summary: res.summary, model: res.model || "Apple Intelligence" }));
+}
+
+function askWithAppleIntelligence(transcript, question, qaHistory, userPrompt, lang) {
+    return nativeKeychain({ action: "aiAsk", transcript, question, qaHistory: qaHistory || [], userPrompt: userPrompt || "", lang: lang || "" })
+        .then(res => ({ answer: res.answer, model: res.model || "Apple Intelligence" }));
+}
+
+async function summarizeVideo(transcript, aiService, apiKey, userPrompt, lang) {
+    // Apple Intelligence runs on-device and needs no key.
+    if (aiService === 'apple') {
+        return summarizeWithAppleIntelligence(transcript, userPrompt, lang);
+    }
+
     if (!apiKey) {
         throw new Error(chrome.i18n.getMessage("errApiKeyMissing"));
     }
@@ -156,7 +188,11 @@ async function summarizeWithOpenAICompatible(service, apiKey, promptText) {
     return { summary, model };
 }
 
-async function askQuestion(transcript, question, qaHistory, aiService, apiKey, userPrompt) {
+async function askQuestion(transcript, question, qaHistory, aiService, apiKey, userPrompt, lang) {
+    if (aiService === 'apple') {
+        return askWithAppleIntelligence(transcript, question, qaHistory, userPrompt, lang);
+    }
+
     if (!apiKey) {
         throw new Error(chrome.i18n.getMessage("errApiKeyMissing"));
     }

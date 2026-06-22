@@ -75,13 +75,14 @@
                     <label class="field">
                         <span data-i18n="settings.aiService">AI service</span>
                         <select name="aiService">
+                            <option value="apple" data-i18n="settings.serviceApple">Apple Intelligence (on device)</option>
                             <option value="gemini">Google Gemini</option>
                             <option value="openai">OpenAI</option>
                             <option value="openrouter">OpenRouter</option>
                         </select>
                     </label>
 
-                    <label class="field">
+                    <label class="field" id="apiKey-field">
                         <span data-i18n="settings.apiKey">API key</span>
                         <input type="password" name="apiKey" placeholder="AIza…" autocapitalize="none" autocorrect="off" spellcheck="false">
                     </label>

@@ -376,7 +376,7 @@ class YouTubeSummarizerUI {
 
     async _loadSettings() {
         const [stored, keychainKey] = await Promise.all([
-            chrome.storage.sync.get({ userPrompt: '', aiService: 'gemini', apiKey: '' }),
+            chrome.storage.sync.get({ userPrompt: '', aiService: 'gemini', apiKey: '', lang: '' }),
             this._sendMessage({ action: "getApiKey" })
                 .then(res => res?.apiKey || '')
                 .catch(e => {
@@ -389,7 +389,8 @@ class YouTubeSummarizerUI {
         return {
             apiKey: keychainKey || stored.apiKey,
             userPrompt: stored.userPrompt,
-            aiService: stored.aiService
+            aiService: stored.aiService,
+            lang: stored.lang
         };
     }
 
@@ -397,7 +398,7 @@ class YouTubeSummarizerUI {
         this.setLoading(true, chrome.i18n.getMessage('aiAnalyzing'));
         try {
             const settings = await this._loadSettings();
-            if (!settings.apiKey) {
+            if (settings.aiService !== 'apple' && !settings.apiKey) {
                 const wrapper = document.createElement('div');
                 wrapper.style.textAlign = 'center';
                 wrapper.style.padding = '20px';
@@ -424,7 +425,8 @@ class YouTubeSummarizerUI {
                 transcript: TranscriptFetcher.toPlainText(segments),
                 aiService: settings.aiService,
                 apiKey: settings.apiKey,
-                userPrompt: settings.userPrompt
+                userPrompt: settings.userPrompt,
+                lang: settings.lang
             });
 
             if (response.error) throw new Error(response.error);
@@ -462,7 +464,7 @@ class YouTubeSummarizerUI {
 
         try {
             const settings = await this._loadSettings();
-            if (!settings.apiKey) {
+            if (settings.aiService !== 'apple' && !settings.apiKey) {
                 this.replaceQABubble(loadingId, 'answer', chrome.i18n.getMessage('apiKeyNotSetLong'));
                 return;
             }
@@ -474,7 +476,8 @@ class YouTubeSummarizerUI {
                 qaHistory: this.qaHistory.slice(-10),
                 aiService: settings.aiService,
                 apiKey: settings.apiKey,
-                userPrompt: settings.userPrompt
+                userPrompt: settings.userPrompt,
+                lang: settings.lang
             });
 
             if (response.error) throw new Error(response.error);

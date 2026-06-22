@@ -70,5 +70,14 @@
   },
   "errKeychainWriteFailed": {
     "message": "Impossible d'enregistrer la clé API dans le trousseau."
+  },
+  "serviceApple": {
+    "message": "Apple Intelligence (sur l'appareil)"
+  },
+  "appleHint": {
+    "message": "Fonctionne sur votre appareil — aucune clé API requise."
+  },
+  "appleUnavailable": {
+    "message": "indisponible sur cet appareil"
   }
 }

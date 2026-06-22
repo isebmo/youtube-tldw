@@ -42,6 +42,9 @@ class ViewController: PlatformViewController, WKNavigationDelegate, WKScriptMess
         ucc.addScriptMessageHandler(replyHandler, contentWorld: .page, name: "refreshEntitlement")
         ucc.addScriptMessageHandler(replyHandler, contentWorld: .page, name: "purchasePremium")
         ucc.addScriptMessageHandler(replyHandler, contentWorld: .page, name: "restorePurchases")
+        ucc.addScriptMessageHandler(replyHandler, contentWorld: .page, name: "aiAvailability")
+        ucc.addScriptMessageHandler(replyHandler, contentWorld: .page, name: "aiSummarize")
+        ucc.addScriptMessageHandler(replyHandler, contentWorld: .page, name: "aiAsk")
 
         self.webView.loadFileURL(Bundle.main.url(forResource: "Main", withExtension: "html")!, allowingReadAccessTo: Bundle.main.resourceURL!)
 
@@ -205,8 +208,54 @@ class ViewController: PlatformViewController, WKNavigationDelegate, WKScriptMess
             handlePurchase(reply: replyHandler)
         case "restorePurchases":
             handleRestore(reply: replyHandler)
+        case "aiAvailability":
+            let info = AppleIntelligence.availabilityInfo()
+            replyHandler(["available": info.available, "reason": info.reason as Any], nil)
+        case "aiSummarize":
+            handleAISummarize(body: message.body, reply: replyHandler)
+        case "aiAsk":
+            handleAIAsk(body: message.body, reply: replyHandler)
         default:
             replyHandler(nil, "Unknown handler: \(message.name)")
+        }
+    }
+
+    private func handleAISummarize(body: Any, reply: @escaping (Any?, String?) -> Void) {
+        guard let dict = body as? [String: Any] else { reply(nil, "Invalid body"); return }
+        guard #available(iOS 26.0, macOS 26.0, *) else {
+            reply(nil, "Apple Intelligence requires iOS 26 / macOS 26"); return
+        }
+        Task {
+            do {
+                let text = try await AppleIntelligence.summarize(
+                    transcript: dict["transcript"] as? String ?? "",
+                    userPrompt: dict["userPrompt"] as? String,
+                    lang: dict["lang"] as? String)
+                reply(["summary": text, "model": AppleIntelligence.modelName], nil)
+            } catch {
+                reply(nil, error.localizedDescription)
+            }
+        }
+    }
+
+    private func handleAIAsk(body: Any, reply: @escaping (Any?, String?) -> Void) {
+        guard let dict = body as? [String: Any] else { reply(nil, "Invalid body"); return }
+        guard #available(iOS 26.0, macOS 26.0, *) else {
+            reply(nil, "Apple Intelligence requires iOS 26 / macOS 26"); return
+        }
+        Task {
+            do {
+                let qa = dict["qaHistory"] as? [[String: String]] ?? []
+                let text = try await AppleIntelligence.answer(
+                    question: dict["question"] as? String ?? "",
+                    transcript: dict["transcript"] as? String ?? "",
+                    qaHistory: qa,
+                    userPrompt: dict["userPrompt"] as? String,
+                    lang: dict["lang"] as? String)
+                reply(["answer": text, "model": AppleIntelligence.modelName], nil)
+            } catch {
+                reply(nil, error.localizedDescription)
+            }
         }
     }
 

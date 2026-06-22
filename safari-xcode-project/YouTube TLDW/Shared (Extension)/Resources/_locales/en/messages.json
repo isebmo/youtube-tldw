@@ -70,5 +70,14 @@
   },
   "errKeychainWriteFailed": {
     "message": "Could not save the API key to the Keychain."
+  },
+  "serviceApple": {
+    "message": "Apple Intelligence (on device)"
+  },
+  "appleHint": {
+    "message": "Runs on your device — no API key needed."
+  },
+  "appleUnavailable": {
+    "message": "not available on this device"
   }
 }

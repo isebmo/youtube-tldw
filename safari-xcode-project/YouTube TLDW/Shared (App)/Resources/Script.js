@@ -18,6 +18,9 @@ const I18N_DICT = {
         "settings.language": "Language",
         "settings.languageAuto": "Automatic (system)",
         "settings.aiService": "AI service",
+        "settings.serviceApple": "Apple Intelligence (on device)",
+        "settings.appleHint": "Runs on your device — no API key needed.",
+        "settings.appleUnavailable": "not available on this device",
         "settings.apiKey": "API key",
         "settings.openrouterModel": "OpenRouter model",
         "settings.openrouterHint": "Leave empty to use the default. See openrouter.ai/models for available IDs.",
@@ -81,6 +84,9 @@ const I18N_DICT = {
         "settings.language": "Langue",
         "settings.languageAuto": "Automatique (système)",
         "settings.aiService": "Service d'IA",
+        "settings.serviceApple": "Apple Intelligence (sur l'appareil)",
+        "settings.appleHint": "Fonctionne sur votre appareil — aucune clé API requise.",
+        "settings.appleUnavailable": "indisponible sur cet appareil",
         "settings.apiKey": "Clé API",
         "settings.openrouterModel": "Modèle OpenRouter",
         "settings.openrouterHint": "Laisse vide pour utiliser le modèle par défaut. Voir openrouter.ai/models pour les identifiants disponibles.",
@@ -353,7 +359,19 @@ const FIXED_PROMPT = `Please summarize the transcription of the YouTube video. B
 Transcript:
 {{transcript}}`;
 
+// On-device Apple Intelligence: summarization runs natively, no API key.
+async function summarizeApple(transcript, settings) {
+    const reply = await window.webkit.messageHandlers.aiSummarize.postMessage({
+        transcript,
+        userPrompt: settings.userPrompt || '',
+        lang: settings.locale || ''
+    });
+    if (!reply || !reply.summary) throw new Error(t('error.noSummary', { service: 'Apple Intelligence' }));
+    return { summary: reply.summary, model: reply.model || 'Apple Intelligence' };
+}
+
 async function summarize(transcript, settings) {
+    if (settings.aiService === 'apple') return summarizeApple(transcript, settings);
     if (!settings.apiKey) throw new Error(t('error.apiKeyMissing'));
     let prompt = FIXED_PROMPT.replace('{{transcript}}', transcript);
     if (settings.userPrompt) prompt += "\n\nAdditional instructions:\n" + settings.userPrompt;
@@ -612,7 +630,7 @@ const App = {
             return;
         }
         const settings = Settings.load();
-        if (!settings.apiKey) {
+        if (settings.aiService !== 'apple' && !settings.apiKey) {
             this.showToast(t('settings.apiKeyMissing'));
             this.showView('settings');
             return;
@@ -636,6 +654,7 @@ const App = {
 
             const serviceLabel = settings.aiService === 'openai' ? 'OpenAI'
                 : settings.aiService === 'openrouter' ? 'OpenRouter'
+                : settings.aiService === 'apple' ? 'Apple Intelligence'
                 : 'Gemini';
             loadingText.textContent = t('loading.summarizing', { service: serviceLabel });
             const r = await summarize(entry.transcript, settings);
@@ -701,13 +720,16 @@ const App = {
             this.refreshHistoryList();
         });
         form.aiService.addEventListener('change', (e) => {
-            this.toggleOpenRouterField(e.target.value);
+            this.toggleServiceFields(e.target.value);
         });
     },
 
-    toggleOpenRouterField(service) {
-        const field = this.el('openrouter-model-field');
-        if (field) field.hidden = service !== 'openrouter';
+    toggleServiceFields(service) {
+        const orField = this.el('openrouter-model-field');
+        if (orField) orField.hidden = service !== 'openrouter';
+        // Apple Intelligence runs on-device — no API key field.
+        const keyField = this.el('apiKey-field');
+        if (keyField) keyField.hidden = service === 'apple';
     },
 
     loadSettingsForm() {
@@ -718,7 +740,33 @@ const App = {
         form.apiKey.value = s.apiKey;
         form.userPrompt.value = s.userPrompt;
         if (form.openrouterModel) form.openrouterModel.value = s.openrouterModel || '';
-        this.toggleOpenRouterField(s.aiService);
+        this.toggleServiceFields(s.aiService);
+        this.probeAppleIntelligence(form, s);
+    },
+
+    async probeAppleIntelligence(form, s) {
+        let available = false;
+        try {
+            const r = await window.webkit.messageHandlers.aiAvailability.postMessage({});
+            available = !!(r && r.available);
+        } catch (e) { /* handler missing on older OS */ }
+
+        const appleOpt = form.aiService.querySelector('option[value="apple"]');
+        if (!available) {
+            if (appleOpt) {
+                appleOpt.disabled = true;
+                appleOpt.textContent = t('settings.serviceApple') + ' — ' + t('settings.appleUnavailable');
+            }
+            if (form.aiService.value === 'apple') {
+                form.aiService.value = 'gemini';
+                Settings.save({ aiService: 'gemini' });
+            }
+        } else if (s.aiService === 'gemini' && !s.apiKey) {
+            // New / unconfigured user on a capable device → default to on-device.
+            form.aiService.value = 'apple';
+            Settings.save({ aiService: 'apple' });
+        }
+        this.toggleServiceFields(form.aiService.value);
     },
 
     bindHistory() {

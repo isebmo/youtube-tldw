@@ -261,13 +261,15 @@
     <div class="form-group">
       <label for="aiService" data-i18n="aiServiceLabel">AI Service:</label>
       <select id="aiService">
+        <option value="apple" data-i18n="serviceApple">Apple Intelligence (on device)</option>
         <option value="gemini">Google Gemini</option>
         <option value="openai" data-i18n="serviceOpenAI">OpenAI</option>
         <option value="openrouter" data-i18n="serviceOpenRouter">OpenRouter</option>
       </select>
+      <small id="appleHint" data-i18n="appleHint" style="display: none;">Runs on your device — no API key needed.</small>
     </div>
 
-    <div class="form-group">
+    <div class="form-group" id="apiKeyGroup">
       <label for="apiKey" id="apiKeyLabel" data-i18n="apiKeyLabelGemini">Gemini API Key:</label>
       <input type="password" id="apiKey" data-i18n-attr-placeholder="apiKeyPlaceholder" placeholder="Enter your API Key">
     </div>

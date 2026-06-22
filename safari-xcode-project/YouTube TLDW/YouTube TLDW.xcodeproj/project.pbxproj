@@ -48,6 +48,10 @@
 		06CE40D72F65B6900033F67C /* content.js in Resources */ = {isa = PBXBuildFile; fileRef = 06CE40C72F65B6900033F67C /* content.js */; };
 		06CE40E12F65B6900033F67C /* _locales in Resources */ = {isa = PBXBuildFile; fileRef = 06CE40E02F65B6900033F67C /* _locales */; };
 		06CE40E22F65B6900033F67C /* _locales in Resources */ = {isa = PBXBuildFile; fileRef = 06CE40E02F65B6900033F67C /* _locales */; };
+		29C9E8B2C4569AFAC2F7F6DE /* AppleIntelligenceEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B4015CF84284EC9609526FA /* AppleIntelligenceEngine.swift */; };
+		652DEC6AD9D43E19743AB928 /* AppleIntelligenceEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B4015CF84284EC9609526FA /* AppleIntelligenceEngine.swift */; };
+		9C2A72C6118AC6D16D6DFD13 /* AppleIntelligenceEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B4015CF84284EC9609526FA /* AppleIntelligenceEngine.swift */; };
+		DD4656512248326ED3078D94 /* AppleIntelligenceEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B4015CF84284EC9609526FA /* AppleIntelligenceEngine.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -103,10 +107,6 @@
 /* Begin PBXFileReference section */
 		064964F62FA8A5C4000FDF31 /* ShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		064965052FA8D6AD000FDF31 /* YouTube TLDW (iOS).entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "YouTube TLDW (iOS).entitlements"; sourceTree = "<group>"; };
-		06DEAD2024050200000001 /* StoreKitConfiguration.storekit */ = {isa = PBXFileReference; lastKnownFileType = file.storekit; path = StoreKitConfiguration.storekit; sourceTree = "<group>"; };
-		06DEAD2024050200000002 /* YouTube TLDW (macOS).entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "YouTube TLDW (macOS).entitlements"; sourceTree = "<group>"; };
-		06DEAD2024050200000003 /* iOS (Extension).entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "iOS (Extension).entitlements"; sourceTree = "<group>"; };
-		06DEAD2024050200000004 /* macOS (Extension).entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "macOS (Extension).entitlements"; sourceTree = "<group>"; };
 		06CE40672F65B68F0033F67C /* Base */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = Base; path = Base.lproj/Main.html; sourceTree = "<group>"; };
 		06CE40682F65B68F0033F67C /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Icon.png; sourceTree = "<group>"; };
 		06CE40692F65B68F0033F67C /* Style.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = Style.css; sourceTree = "<group>"; };
@@ -137,6 +137,11 @@
 		06CE40C62F65B6900033F67C /* options.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = options.html; path = Resources/options.html; sourceTree = "<group>"; };
 		06CE40C72F65B6900033F67C /* content.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = content.js; path = Resources/content.js; sourceTree = "<group>"; };
 		06CE40E02F65B6900033F67C /* _locales */ = {isa = PBXFileReference; lastKnownFileType = folder; name = _locales; path = Resources/_locales; sourceTree = "<group>"; };
+		06DEAD2024050200000001 /* StoreKitConfiguration.storekit */ = {isa = PBXFileReference; lastKnownFileType = file.storekit; path = StoreKitConfiguration.storekit; sourceTree = "<group>"; };
+		06DEAD2024050200000002 /* YouTube TLDW (macOS).entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "YouTube TLDW (macOS).entitlements"; sourceTree = "<group>"; };
+		06DEAD2024050200000003 /* iOS (Extension).entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "iOS (Extension).entitlements"; sourceTree = "<group>"; };
+		06DEAD2024050200000004 /* macOS (Extension).entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "macOS (Extension).entitlements"; sourceTree = "<group>"; };
+		7B4015CF84284EC9609526FA /* AppleIntelligenceEngine.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppleIntelligenceEngine.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -224,6 +229,7 @@
 				06CE406B2F65B68F0033F67C /* ViewController.swift */,
 				06CE406C2F65B6900033F67C /* Assets.xcassets */,
 				06CE40652F65B68F0033F67C /* Resources */,
+				7B4015CF84284EC9609526FA /* AppleIntelligenceEngine.swift */,
 			);
 			path = "Shared (App)";
 			sourceTree = "<group>";
@@ -334,8 +340,6 @@
 				064964F72FA8A5C4000FDF31 /* ShareExtension */,
 			);
 			name = ShareExtension;
-			packageProductDependencies = (
-			);
 			productName = ShareExtension;
 			productReference = 064964F62FA8A5C4000FDF31 /* ShareExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
@@ -356,8 +360,6 @@
 				064964FF2FA8A5C4000FDF31 /* PBXTargetDependency */,
 			);
 			name = "YouTube TLDW (iOS)";
-			packageProductDependencies = (
-			);
 			productName = "YouTube TLDW (iOS)";
 			productReference = 06CE40732F65B6900033F67C /* YouTube TLDW.app */;
 			productType = "com.apple.product-type.application";
@@ -377,8 +379,6 @@
 				06CE409E2F65B6900033F67C /* PBXTargetDependency */,
 			);
 			name = "YouTube TLDW (macOS)";
-			packageProductDependencies = (
-			);
 			productName = "YouTube TLDW (macOS)";
 			productReference = 06CE40852F65B6900033F67C /* YouTube TLDW.app */;
 			productType = "com.apple.product-type.application";
@@ -396,8 +396,6 @@
 			dependencies = (
 			);
 			name = "YouTube TLDW Extension (iOS)";
-			packageProductDependencies = (
-			);
 			productName = "YouTube TLDW Extension (iOS)";
 			productReference = 06CE40912F65B6900033F67C /* YouTube TLDW Extension.appex */;
 			productType = "com.apple.product-type.app-extension";
@@ -415,8 +413,6 @@
 			dependencies = (
 			);
 			name = "YouTube TLDW Extension (macOS)";
-			packageProductDependencies = (
-			);
 			productName = "YouTube TLDW Extension (macOS)";
 			productReference = 06CE409B2F65B6900033F67C /* YouTube TLDW Extension.appex */;
 			productType = "com.apple.product-type.app-extension";
@@ -555,6 +551,7 @@
 				06CE40A92F65B6900033F67C /* ViewController.swift in Sources */,
 				06CE40772F65B6900033F67C /* AppDelegate.swift in Sources */,
 				06CE40792F65B6900033F67C /* SceneDelegate.swift in Sources */,
+				DD4656512248326ED3078D94 /* AppleIntelligenceEngine.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -564,6 +561,7 @@
 			files = (
 				06CE40AA2F65B6900033F67C /* ViewController.swift in Sources */,
 				06CE40882F65B6900033F67C /* AppDelegate.swift in Sources */,
+				9C2A72C6118AC6D16D6DFD13 /* AppleIntelligenceEngine.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -572,6 +570,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				06CE40AD2F65B6900033F67C /* SafariWebExtensionHandler.swift in Sources */,
+				29C9E8B2C4569AFAC2F7F6DE /* AppleIntelligenceEngine.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -580,6 +579,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				06CE40AE2F65B6900033F67C /* SafariWebExtensionHandler.swift in Sources */,
+				652DEC6AD9D43E19743AB928 /* AppleIntelligenceEngine.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -978,11 +978,11 @@
 				CODE_SIGN_ENTITLEMENTS = "macOS (Extension).entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 18;
+				DEVELOPMENT_TEAM = 2T8A23HDD8;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				DEVELOPMENT_TEAM = 2T8A23HDD8;
 				INFOPLIST_FILE = "macOS (Extension)/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "YouTube TLDW Extension";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -1015,11 +1015,11 @@
 				CODE_SIGN_ENTITLEMENTS = "macOS (Extension).entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 18;
+				DEVELOPMENT_TEAM = 2T8A23HDD8;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				DEVELOPMENT_TEAM = 2T8A23HDD8;
 				INFOPLIST_FILE = "macOS (Extension)/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "YouTube TLDW Extension";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
