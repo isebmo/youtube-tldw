@@ -53,6 +53,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 });
 
+// Clicking the toolbar icon opens the options page — the only reliable way to
+// reach settings on Safari (the in-page button only shows when a key is missing).
+if (chrome.action && chrome.action.onClicked) {
+    chrome.action.onClicked.addListener(() => {
+        try {
+            chrome.runtime.openOptionsPage();
+        } catch (e) {
+            chrome.tabs.create({ url: chrome.runtime.getURL('options.html') });
+        }
+    });
+}
+
 // New installs default to Apple Intelligence when the device supports it, so the
 // extension works with no API key out of the box. An explicit prior choice wins.
 chrome.runtime.onInstalled.addListener(() => {
