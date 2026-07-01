@@ -53,28 +53,39 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 });
 
+// These optional registrations must NEVER throw at the service-worker's top
+// level: an uncaught error during SW evaluation kills the whole worker —
+// including the onMessage listener above — which makes every sendMessage from
+// the content script resolve to `undefined`. Guard each API and wrap in try.
+
 // Clicking the toolbar icon opens the options page — the only reliable way to
 // reach settings on Safari (the in-page button only shows when a key is missing).
-if (chrome.action && chrome.action.onClicked) {
-    chrome.action.onClicked.addListener(() => {
-        try {
-            chrome.runtime.openOptionsPage();
-        } catch (e) {
-            chrome.tabs.create({ url: chrome.runtime.getURL('options.html') });
-        }
-    });
-}
+try {
+    if (chrome.action && chrome.action.onClicked && chrome.action.onClicked.addListener) {
+        chrome.action.onClicked.addListener(() => {
+            try {
+                chrome.runtime.openOptionsPage();
+            } catch (e) {
+                chrome.tabs.create({ url: chrome.runtime.getURL('options.html') });
+            }
+        });
+    }
+} catch (e) { /* action API unavailable in this browser */ }
 
 // New installs default to Apple Intelligence when the device supports it, so the
 // extension works with no API key out of the box. An explicit prior choice wins.
-chrome.runtime.onInstalled.addListener(() => {
-    chrome.storage.sync.get({ aiService: null }, (items) => {
-        if (items.aiService) return;
-        nativeKeychain({ action: "aiAvailability" })
-            .then(res => { if (res && res.available) chrome.storage.sync.set({ aiService: 'apple' }); })
-            .catch(() => {});
-    });
-});
+try {
+    if (chrome.runtime.onInstalled && chrome.runtime.onInstalled.addListener) {
+        chrome.runtime.onInstalled.addListener(() => {
+            chrome.storage.sync.get({ aiService: null }, (items) => {
+                if (items.aiService) return;
+                nativeKeychain({ action: "aiAvailability" })
+                    .then(res => { if (res && res.available) chrome.storage.sync.set({ aiService: 'apple' }); })
+                    .catch(() => {});
+            });
+        });
+    }
+} catch (e) { /* onInstalled unavailable in this browser */ }
 
 async function getOpenRouterModel() {
     const { openrouterModel } = await chrome.storage.sync.get({ openrouterModel: '' });
