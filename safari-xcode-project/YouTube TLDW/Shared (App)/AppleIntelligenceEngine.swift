@@ -71,12 +71,17 @@ enum AppleIntelligence {
             )
         }
 
+        // The same language directive on every step: without it the per-segment
+        // summaries come back in the transcript's language and drag the merged
+        // summary along with them, ignoring the user's choice.
+        let respondIn = languageDirective(lang, fallback: "Respond in the same language as the transcript.")
+
         // Map: summarize each segment independently.
         var partials: [String] = []
         partials.reserveCapacity(segments.count)
         for segment in segments {
             let partial = try await respondWithFallback(
-                instructions: "Summarize this portion of a YouTube video transcript as concise markdown bullet points covering every key point. Respond in the same language as the transcript. Output only the bullets, no preamble.",
+                instructions: "Summarize this portion of a YouTube video transcript as concise markdown bullet points covering every key point. \(respondIn) Output only the bullets, no preamble.",
                 prompt: "Transcript portion:\n\(segment)",
                 maxTokens: 500
             )
@@ -105,11 +110,7 @@ enum AppleIntelligence {
             }
         }
         var instructions = "You answer questions about a YouTube video using only its transcript. If the answer is not in the transcript, say so. Answer in markdown."
-        if let lang, !lang.isEmpty, lang != "auto" {
-            instructions += " Respond in \(lang)."
-        } else {
-            instructions += " Respond in the language of the question."
-        }
+        instructions += " " + languageDirective(lang, fallback: "Respond in the language of the question.")
         if let userPrompt, !userPrompt.isEmpty {
             instructions += "\n\(userPrompt)"
         }
@@ -119,14 +120,19 @@ enum AppleIntelligence {
 
     // MARK: - Generation helpers
 
+    /// Turns a stored locale ("en", "fr", "auto", "") into an explicit directive.
+    /// The model follows a language *name* far more reliably than a bare code.
+    private static func languageDirective(_ lang: String?, fallback: String) -> String {
+        guard let lang, !lang.isEmpty, lang != "auto" else { return fallback }
+        let code = String(lang.prefix(2))
+        let name = Locale(identifier: "en_US").localizedString(forLanguageCode: code) ?? code
+        return "Respond in \(name)."
+    }
+
     @available(iOS 26.0, macOS 26.0, *)
     private static func summaryInstructions(userPrompt: String?, lang: String?) -> String {
         var instructions = "Summarize the YouTube video transcript precisely and in a structured way, formatted in markdown, so a reader can understand all points without watching. Output only the summary, with no introductory sentence."
-        if let lang, !lang.isEmpty, lang != "auto" {
-            instructions += " Respond in \(lang)."
-        } else {
-            instructions += " Respond in the same language as the transcript."
-        }
+        instructions += " " + languageDirective(lang, fallback: "Respond in the same language as the transcript.")
         if let userPrompt, !userPrompt.isEmpty {
             instructions += "\n\nAdditional instructions:\n\(userPrompt)"
         }

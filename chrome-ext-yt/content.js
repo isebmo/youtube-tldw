@@ -86,9 +86,12 @@ class TranscriptFetcher {
                 throw new Error("No captions found for this video.");
             }
 
-            // Prefer English, then French, then first available
-            const track = captions.find(t => t.languageCode === 'en') ||
-                captions.find(t => t.languageCode === 'fr') ||
+            // Prefer the language the extension is displayed in, then English,
+            // then whatever exists: the transcript's language drives the summary's.
+            const baseLang = (code) => (code || '').split('-')[0].toLowerCase();
+            const pickTrack = (lang) => captions.find(c => baseLang(c.languageCode) === lang);
+            const track = pickTrack(baseLang(chrome.i18n.getUILanguage())) ||
+                pickTrack('en') ||
                 captions[0];
             let transcriptUrl = track.baseUrl;
 

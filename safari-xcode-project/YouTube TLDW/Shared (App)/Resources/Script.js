@@ -327,9 +327,11 @@ class TranscriptFetcher {
         const captions = data.captions?.playerCaptionsTracklistRenderer?.captionTracks;
         if (!captions || captions.length === 0) throw new Error(t('error.noCaptions'));
 
-        const track = captions.find(t => t.languageCode === 'fr')
-            || captions.find(t => t.languageCode === 'en')
-            || captions[0];
+        // Prefer the language the app is displayed in, then English, then
+        // whatever exists: the transcript's language drives the summary's.
+        const baseLang = (code) => (code || '').split('-')[0].toLowerCase();
+        const pickTrack = (lang) => captions.find(c => baseLang(c.languageCode) === lang);
+        const track = pickTrack(I18N.locale) || pickTrack('en') || captions[0];
         const transcriptUrl = track.baseUrl.replace('&fmt=srv3', '');
         const xmlRes = await nativeFetch(transcriptUrl);
         const xmlText = await xmlRes.text();
