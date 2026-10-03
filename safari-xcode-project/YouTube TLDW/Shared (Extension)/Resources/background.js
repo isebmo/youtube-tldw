@@ -18,8 +18,39 @@ function nativeKeychain(message) {
     });
 }
 
+// Apple Intelligence can take minutes on a long video. Safari stops the service
+// worker long before that and the pending reply is lost (content.js received
+// `undefined`). So AI requests run as jobs that content.js polls: every poll is
+// a new event, which keeps the worker alive until the result is ready.
+const jobs = new Map();
+
+function startJob(request) {
+    const jobId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const run = request.action === "askQuestion"
+        ? askQuestion(request.transcript, request.question, request.qaHistory, request.aiService, request.apiKey, request.userPrompt, request.lang)
+            .then(result => ({ answer: result.answer, model: result.model }))
+        : summarizeVideo(request.transcript, request.aiService, request.apiKey, request.userPrompt, request.lang)
+            .then(result => ({ summary: result.summary, model: result.model }));
+    jobs.set(jobId, { done: false });
+    run.catch(error => ({ error: error.message }))
+        .then(result => jobs.set(jobId, { done: true, result }));
+    return jobId;
+}
+
+function pollJob(jobId) {
+    const job = jobs.get(jobId);
+    // Unknown id: the worker was restarted and the job died with it.
+    if (!job) return { done: true, result: { error: chrome.i18n.getMessage("errJobInterrupted") } };
+    if (job.done) jobs.delete(jobId);
+    return job;
+}
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === "summarize") {
+    if (request.action === "startJob") {
+        sendResponse({ jobId: startJob(request.job) });
+    } else if (request.action === "pollJob") {
+        sendResponse(pollJob(request.jobId));
+    } else if (request.action === "summarize") {
         summarizeVideo(request.transcript, request.aiService, request.apiKey, request.userPrompt, request.lang)
             .then(result => sendResponse({ summary: result.summary, model: result.model }))
             .catch(error => sendResponse({ error: error.message }));

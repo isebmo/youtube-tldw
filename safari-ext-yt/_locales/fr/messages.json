@@ -55,6 +55,7 @@
     "placeholders": { "name": { "content": "$1" } }
   },
 
+  "errJobInterrupted": { "message": "La requête IA a été interrompue. Réessayez." },
   "errApiKeyMissing": { "message": "Clé API manquante. Configure-la dans les options de l'extension." },
   "errUnsupportedService": {
     "message": "Service d'IA non pris en charge : $SERVICE$",

@@ -299,6 +299,21 @@ class YouTubeSummarizerUI {
         }
     }
 
+    // Runs a summarize/askQuestion request as a background job and polls until it
+    // finishes; a single long-lived message would be dropped when Safari stops the
+    // service worker during a slow Apple Intelligence run.
+    async _runAIJob(message) {
+        const noReply = () => new Error(chrome.i18n.getMessage('errJobInterrupted'));
+        const start = await this._sendMessage({ action: 'startJob', job: message });
+        if (!start || !start.jobId) throw noReply();
+        for (;;) {
+            await new Promise(r => setTimeout(r, 1000));
+            const poll = await this._sendMessage({ action: 'pollJob', jobId: start.jobId });
+            if (!poll) throw noReply();
+            if (poll.done) return poll.result;
+        }
+    }
+
     removeHeaderButtons() {
         const el = document.getElementById(this.headerBtnContainerId);
         if (el) el.remove();
@@ -423,7 +438,7 @@ class YouTubeSummarizerUI {
 
             const segments = await TranscriptFetcher.getTranscript();
             this.cachedTranscript = segments;
-            const response = await this._sendMessage({
+            const response = await this._runAIJob({
                 action: "summarize",
                 transcript: TranscriptFetcher.toPlainText(segments),
                 aiService: settings.aiService,
@@ -472,7 +487,7 @@ class YouTubeSummarizerUI {
                 return;
             }
 
-            const response = await this._sendMessage({
+            const response = await this._runAIJob({
                 action: "askQuestion",
                 transcript: TranscriptFetcher.toPlainText(this.cachedTranscript),
                 question: question,
