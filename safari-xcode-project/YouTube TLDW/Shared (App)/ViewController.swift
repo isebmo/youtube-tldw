@@ -273,10 +273,11 @@ class ViewController: PlatformViewController, WKNavigationDelegate, WKScriptMess
     private func handlePurchase(reply: @escaping (Any?, String?) -> Void) {
         if #available(iOS 15.0, macOS 12.0, *) {
             Task {
-                let success = await IAP.purchase()
+                let status = await IAP.purchase()
                 let payload = await IAP.currentEntitlement()
                 var dict = payload
-                dict["success"] = success
+                dict["success"] = status == "success"
+                dict["status"] = status
                 reply(dict, nil)
             }
         } else {
@@ -456,10 +457,12 @@ enum IAP {
         }
     }
 
-    static func purchase() async -> Bool {
+    /// Returns "success", "cancelled", "pending", "unavailable" (product not
+    /// returned by the App Store) or "failed", so the UI can say what happened.
+    static func purchase() async -> String {
         guard let product = await loadProduct() else {
             NSLog("[IAP] purchase: no product loaded")
-            return false
+            return "unavailable"
         }
         NSLog("[IAP] purchase: starting for %@ (%@)", product.id, product.displayPrice)
         do {
@@ -469,20 +472,22 @@ enum IAP {
                 if case .verified(let transaction) = verification {
                     NSLog("[IAP] purchase verified, finishing transaction")
                     await transaction.finish()
-                    return true
+                    return "success"
                 }
                 NSLog("[IAP] purchase succeeded but verification failed")
             case .userCancelled:
                 NSLog("[IAP] purchase userCancelled")
+                return "cancelled"
             case .pending:
                 NSLog("[IAP] purchase pending")
+                return "pending"
             @unknown default:
                 NSLog("[IAP] purchase unknown result")
             }
         } catch {
             NSLog("[IAP] purchase error: %@", String(describing: error))
         }
-        return false
+        return "failed"
     }
 
     static func restore() async -> Bool {

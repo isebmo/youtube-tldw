@@ -45,6 +45,9 @@ const I18N_DICT = {
         "paywall.purchasing": "Purchasing…",
         "toast.premiumActivated": "Premium activated. Thank you!",
         "toast.purchaseCanceled": "Purchase canceled.",
+        "toast.purchaseUnavailable": "Purchase unavailable: the App Store did not return the product. Try again later.",
+        "toast.purchasePending": "Purchase pending approval.",
+        "toast.purchaseFailed": "Purchase failed. Please try again.",
         "toast.purchaseRestored": "Purchase restored.",
         "toast.noPurchase": "No purchase found.",
         "toast.summaryCopied": "Summary copied.",
@@ -111,6 +114,9 @@ const I18N_DICT = {
         "paywall.purchasing": "Achat en cours…",
         "toast.premiumActivated": "Premium activé. Merci !",
         "toast.purchaseCanceled": "Achat annulé.",
+        "toast.purchaseUnavailable": "Achat indisponible : l'App Store n'a pas renvoyé le produit. Réessaie plus tard.",
+        "toast.purchasePending": "Achat en attente d'approbation.",
+        "toast.purchaseFailed": "L'achat a échoué. Réessaie.",
         "toast.purchaseRestored": "Achat restauré.",
         "toast.noPurchase": "Aucun achat trouvé.",
         "toast.summaryCopied": "Résumé copié.",
@@ -182,6 +188,15 @@ const Entitlement = {
     async get() { return this.cache || await this.refresh(); },
     canSummarize(ent) { return !!(ent && (ent.premium || ent.trialActive)); }
 };
+
+function purchaseFailureToast(res) {
+    const key = {
+        unavailable: 'toast.purchaseUnavailable',
+        pending: 'toast.purchasePending',
+        failed: 'toast.purchaseFailed'
+    }[res && res.status] || 'toast.purchaseCanceled';
+    return t(key);
+}
 
 async function purchasePremium() {
     try { return await window.webkit.messageHandlers.purchasePremium.postMessage({}); }
@@ -500,7 +515,7 @@ const App = {
                 if (res && res.premium) {
                     this.showToast(t('toast.premiumActivated'));
                 } else if (res && res.success === false) {
-                    this.showToast(t('toast.purchaseCanceled'));
+                    this.showToast(purchaseFailureToast(res));
                 }
             });
         }
@@ -565,6 +580,7 @@ const App = {
                 this.showToast(t('toast.premiumActivated'));
                 this.el('result-area').hidden = true;
             } else if (res && res.success === false) {
+                this.showToast(purchaseFailureToast(res));
                 btn.disabled = false;
                 btn.textContent = buyLabel;
             }
