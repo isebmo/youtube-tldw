@@ -250,10 +250,27 @@ const Settings = {
         const merged = Object.assign({}, this.load(), values);
         this.cache = merged;
         localStorage.setItem(this.KEY, JSON.stringify(merged));
-        try { window.webkit.messageHandlers.saveSettings.postMessage(merged); } catch (e) {}
+        // The key lives in the iCloud-synced Keychain: send it only when the
+        // caller sets it, so saving another setting never writes back a stale
+        // (or not-yet-synced, empty) key over the one on the other devices.
+        const payload = Object.assign({}, merged);
+        if (!('apiKey' in values)) delete payload.apiKey;
+        try { window.webkit.messageHandlers.saveSettings.postMessage(payload); } catch (e) {}
         return merged;
+    },
+    // Called by the native side when the app comes back to the foreground:
+    // picks up a key that reached this device through iCloud Keychain.
+    applyKeychainKey(key) {
+        const s = this.load();
+        if (!key || key === s.apiKey) return;
+        const previous = s.apiKey || '';
+        s.apiKey = key;
+        localStorage.setItem(this.KEY, JSON.stringify(s));
+        const form = document.getElementById('settings-form');
+        if (form && form.apiKey && form.apiKey.value.trim() === previous) form.apiKey.value = key;
     }
 };
+window.__tldwApplyKeychainKey = (key) => Settings.applyKeychainKey(key);
 
 const History = {
     KEY: 'tldw.history',
@@ -722,13 +739,16 @@ const App = {
             e.preventDefault();
             const data = new FormData(e.target);
             const newLocale = data.get('locale') || 'auto';
-            Settings.save({
+            const values = {
                 locale: newLocale,
                 aiService: data.get('aiService'),
-                apiKey: (data.get('apiKey') || '').trim(),
                 userPrompt: (data.get('userPrompt') || '').trim(),
                 openrouterModel: (data.get('openrouterModel') || '').trim()
-            });
+            };
+            // Only an edited key goes back to the (iCloud-synced) Keychain.
+            const apiKey = (data.get('apiKey') || '').trim();
+            if (apiKey !== (Settings.load().apiKey || '')) values.apiKey = apiKey;
+            Settings.save(values);
             I18N.setLocale(newLocale);
             I18N.hydrate();
             const status = this.el('settings-status');

@@ -50,6 +50,11 @@ const updateLabel = (service) => {
   document.getElementById('appleHint').style.display = isApple ? 'block' : 'none';
 };
 
+// Key as last read from / written to the Keychain. The item syncs through
+// iCloud Keychain, so writing back an unchanged (often empty, on a device the
+// sync hasn't reached yet) key would wipe it on every other device.
+let loadedApiKey = '';
+
 const saveOptions = async () => {
   const status = document.getElementById('status');
   const aiService = document.getElementById('aiService').value;
@@ -64,7 +69,10 @@ const saveOptions = async () => {
         else resolve();
       });
     });
-    await setApiKey(apiKey);
+    if (apiKey !== loadedApiKey) {
+      await setApiKey(apiKey);
+      loadedApiKey = apiKey;
+    }
 
     status.textContent = i18n('settingsSaved');
     status.className = 'success';
@@ -99,13 +107,14 @@ const restoreOptions = async () => {
   } catch (e) {
     console.warn('Keychain read failed:', e.message);
   }
+  loadedApiKey = apiKey;
 
   // One-shot migration: if Keychain is empty but a key was previously stored in
   // storage.sync, move it over and clear the plaintext copy.
   if (!apiKey && items.apiKey) {
     try {
       await setApiKey(items.apiKey);
-      apiKey = items.apiKey;
+      apiKey = loadedApiKey = items.apiKey;
       chrome.storage.sync.remove('apiKey');
     } catch (e) {
       console.warn('Keychain migration failed:', e.message);

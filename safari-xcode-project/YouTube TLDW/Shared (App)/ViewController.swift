@@ -65,6 +65,16 @@ class ViewController: PlatformViewController, WKNavigationDelegate, WKScriptMess
         if let url = consumePendingURLFromAppGroup() {
             deliverDeepLinkToWeb(url: url)
         }
+        pushKeychainKeyToWeb()
+    }
+
+    // The API key syncs through iCloud Keychain and may land on this device
+    // after the page loaded: hand the current one to the web UI.
+    private func pushKeychainKeyToWeb() {
+        guard let apiKey = SharedKeychain.getApiKey(), !apiKey.isEmpty,
+              let data = try? JSONSerialization.data(withJSONObject: [apiKey]),
+              let json = String(data: data, encoding: .utf8) else { return }
+        webView.evaluateJavaScript("window.__tldwApplyKeychainKey && window.__tldwApplyKeychainKey(\(json)[0]);", completionHandler: nil)
     }
 
     func deliverDeepLinkToWeb(url: URL) {
@@ -376,6 +386,10 @@ enum SharedKeychain {
     }
 
     static func setApiKey(_ apiKey: String) -> Bool {
+        // The item syncs through iCloud Keychain: skip no-op writes and never
+        // create an item for an empty key, or a device the sync hasn't reached
+        // yet would wipe the key on every other device.
+        if apiKey == (getApiKey() ?? "") { return true }
         guard let data = apiKey.data(using: .utf8) else { return false }
         let query = baseQuery()
 

@@ -124,6 +124,10 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
     }
 
     private static func setApiKey(_ apiKey: String) -> Bool {
+        // The item syncs through iCloud Keychain: skip no-op writes and never
+        // create an item for an empty key, or a device the sync hasn't reached
+        // yet would wipe the key on every other device.
+        if apiKey == (getApiKey() ?? "") { return true }
         guard let data = apiKey.data(using: .utf8) else { return false }
         let query = baseQuery()
 
