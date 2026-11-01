@@ -37,7 +37,7 @@ VERSION=$(jq -r '.version' chrome-ext-yt/manifest.json)
 ZIP="dist/chrome-ext-yt-v${VERSION}.zip"
 
 echo "==> Uploading to Chrome Web Store"
-npx --yes chrome-webstore-upload-cli upload \
+npx --yes chrome-webstore-upload-cli@3.5.0 upload \
   --source "$ZIP" \
   --extension-id "$CHROME_EXTENSION_ID" \
   --client-id "$CHROME_CLIENT_ID" \
@@ -46,7 +46,7 @@ npx --yes chrome-webstore-upload-cli upload \
 
 if [[ "$PUBLISH" -eq 1 ]]; then
   echo "==> Submitting for review"
-  npx --yes chrome-webstore-upload-cli publish \
+  npx --yes chrome-webstore-upload-cli@3.5.0 publish \
     --extension-id "$CHROME_EXTENSION_ID" \
     --client-id "$CHROME_CLIENT_ID" \
     --client-secret "$CHROME_CLIENT_SECRET" \
