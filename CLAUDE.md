@@ -53,3 +53,7 @@ The three variants are near-copies. When modifying shared logic, **changes must 
 - **OpenRouter**: OpenAI-compatible API with extra headers (`HTTP-Referer`, `X-Title`)
 
 OpenAI and OpenRouter are currently disabled in the options UI (`<option disabled>`).
+
+## Backlog
+
+Backlog : projet vault `tldw` (skills `backlog` pour le tenir à jour, `next-task` pour le dépiler : `/next-task`, `/next-task all` en parallèle).
