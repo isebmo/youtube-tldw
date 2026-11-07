@@ -25,13 +25,15 @@ function sendBg(message) {
   });
 }
 
-async function getApiKey() {
-  const res = await sendBg({ action: "getApiKey" });
+const KEY_SERVICES = ['gemini', 'openai', 'openrouter'];
+
+async function getApiKey(service) {
+  const res = await sendBg({ action: "getApiKey", service });
   return res.apiKey || "";
 }
 
-async function setApiKey(apiKey) {
-  const res = await sendBg({ action: "setApiKey", apiKey });
+async function setApiKey(service, apiKey) {
+  const res = await sendBg({ action: "setApiKey", service, apiKey });
   // Swift reports Keychain failures as {ok:false} without an error message;
   // surface them so callers don't discard the storage.sync copy of the key.
   if (!res.ok) throw new Error(i18n('errKeychainWriteFailed'));
@@ -50,15 +52,41 @@ const updateLabel = (service) => {
   document.getElementById('appleHint').style.display = isApple ? 'block' : 'none';
 };
 
-// Key as last read from / written to the Keychain. The item syncs through
-// iCloud Keychain, so writing back an unchanged (often empty, on a device the
-// sync hasn't reached yet) key would wipe it on every other device.
-let loadedApiKey = '';
+// One Keychain key per AI service. `loadedApiKeys` holds each key as last read
+// from / written to the Keychain: the items sync through iCloud Keychain, so
+// writing back an unchanged (often empty, on a device the sync hasn't reached
+// yet) key would wipe it on every other device. `draftApiKeys` keeps what the
+// user typed for each service while switching between them before saving.
+const loadedApiKeys = {};
+const draftApiKeys = {};
+let shownKeyService = null;
+
+async function loadApiKey(service) {
+  if (!(service in loadedApiKeys)) {
+    try {
+      loadedApiKeys[service] = await getApiKey(service);
+    } catch (e) {
+      console.warn('Keychain read failed:', e.message);
+      return '';
+    }
+  }
+  return loadedApiKeys[service];
+}
+
+// Shows the key of `service` in the field, remembering the edit made to the
+// previously shown one.
+async function showApiKeyFor(service) {
+  const field = document.getElementById('apiKey');
+  if (shownKeyService) draftApiKeys[shownKeyService] = field.value;
+  shownKeyService = KEY_SERVICES.includes(service) ? service : null;
+  if (!shownKeyService) return;
+  const key = shownKeyService in draftApiKeys ? draftApiKeys[shownKeyService] : await loadApiKey(shownKeyService);
+  if (shownKeyService === service) field.value = key;
+}
 
 const saveOptions = async () => {
   const status = document.getElementById('status');
   const aiService = document.getElementById('aiService').value;
-  const apiKey = document.getElementById('apiKey').value;
   const userPrompt = document.getElementById('userPrompt').value;
   const openrouterModel = document.getElementById('openrouterModel').value.trim();
 
@@ -69,9 +97,11 @@ const saveOptions = async () => {
         else resolve();
       });
     });
-    if (apiKey !== loadedApiKey) {
-      await setApiKey(apiKey);
-      loadedApiKey = apiKey;
+    if (shownKeyService) draftApiKeys[shownKeyService] = document.getElementById('apiKey').value;
+    for (const [service, apiKey] of Object.entries(draftApiKeys)) {
+      if (service in loadedApiKeys && apiKey === loadedApiKeys[service]) continue;
+      await setApiKey(service, apiKey);
+      loadedApiKeys[service] = apiKey;
     }
 
     status.textContent = i18n('settingsSaved');
@@ -101,28 +131,22 @@ const restoreOptions = async () => {
   document.getElementById('openrouterModel').value = items.openrouterModel;
   updateLabel(items.aiService);
 
-  let apiKey = '';
-  try {
-    apiKey = await getApiKey();
-  } catch (e) {
-    console.warn('Keychain read failed:', e.message);
-  }
-  loadedApiKey = apiKey;
-
   // One-shot migration: if Keychain is empty but a key was previously stored in
-  // storage.sync, move it over and clear the plaintext copy.
-  if (!apiKey && items.apiKey) {
+  // storage.sync, move it over (to the selected service) and clear the
+  // plaintext copy.
+  const migrateTo = KEY_SERVICES.includes(items.aiService) ? items.aiService : 'gemini';
+  if (items.apiKey && !(await loadApiKey(migrateTo))) {
     try {
-      await setApiKey(items.apiKey);
-      apiKey = loadedApiKey = items.apiKey;
+      await setApiKey(migrateTo, items.apiKey);
+      loadedApiKeys[migrateTo] = items.apiKey;
       chrome.storage.sync.remove('apiKey');
     } catch (e) {
       console.warn('Keychain migration failed:', e.message);
-      apiKey = items.apiKey;
+      draftApiKeys[migrateTo] = items.apiKey;
     }
   }
 
-  document.getElementById('apiKey').value = apiKey;
+  await showApiKeyFor(items.aiService);
 
   // Probe Apple Intelligence; disable the option when the device can't run it,
   // and fall back to Gemini if it was the selected service.
@@ -142,10 +166,12 @@ const restoreOptions = async () => {
     console.warn('Apple Intelligence probe failed:', e.message);
   }
   updateLabel(document.getElementById('aiService').value);
+  await showApiKeyFor(document.getElementById('aiService').value);
 };
 
 document.getElementById('aiService').addEventListener('change', (e) => {
   updateLabel(e.target.value);
+  showApiKeyFor(e.target.value);
 });
 
 document.addEventListener('DOMContentLoaded', () => {

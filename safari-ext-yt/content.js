@@ -393,15 +393,15 @@ class YouTubeSummarizerUI {
     }
 
     async _loadSettings() {
-        const [stored, keychainKey] = await Promise.all([
-            chrome.storage.sync.get({ userPrompt: '', aiService: 'gemini', apiKey: '', lang: '' }),
-            this._sendMessage({ action: "getApiKey" })
+        const stored = await chrome.storage.sync.get({ userPrompt: '', aiService: 'gemini', apiKey: '', lang: '' });
+        // One Keychain key per AI service (synced across devices by iCloud).
+        const keychainKey = stored.aiService === 'apple' ? '' :
+            await this._sendMessage({ action: "getApiKey", service: stored.aiService })
                 .then(res => res?.apiKey || '')
                 .catch(e => {
                     console.warn('Keychain read failed:', e?.message);
                     return '';
-                })
-        ]);
+                });
         // Fall back to the legacy storage.sync key for users who haven't opened
         // the options page since the Keychain migration shipped.
         return {

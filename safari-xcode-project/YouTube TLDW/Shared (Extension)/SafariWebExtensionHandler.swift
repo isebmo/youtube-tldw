@@ -12,7 +12,7 @@ import os.log
 class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
 
     private static let keychainService = "com.mouret.youtube-tldw"
-    private static let keychainAccount = "apiKey"
+    private static let keychainServices = ["gemini", "openai", "openrouter"]
     private static let keychainAccessGroup = "2T8A23HDD8.com.mouret.youtube-tldw.shared"
 
     func beginRequest(with context: NSExtensionContext) {
@@ -82,33 +82,42 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
     }
 
     private func handleSync(action: String, dict: [String: Any]) -> [String: Any] {
+        // One Keychain item per AI service; Gemini when unspecified (older
+        // callers only knew a single key).
+        let aiService = dict["service"] as? String ?? "gemini"
+        guard Self.keychainServices.contains(aiService) else { return ["error": "unknown service: \(aiService)"] }
         switch action {
         case "getApiKey":
-            return ["apiKey": Self.getApiKey() as Any]
+            return ["apiKey": Self.getApiKey(service: aiService) as Any]
         case "setApiKey":
             guard let key = dict["apiKey"] as? String else { return ["error": "missing apiKey"] }
-            let ok = Self.setApiKey(key)
+            let ok = Self.setApiKey(key, service: aiService)
             return ["ok": ok]
         case "deleteApiKey":
-            let ok = Self.deleteApiKey()
+            let ok = Self.deleteApiKey(service: aiService)
             return ["ok": ok]
         default:
             return ["error": "unknown action: \(action)"]
         }
     }
 
-    private static func baseQuery() -> [String: Any] {
+    // Same items as SharedKeychain in Shared (App)/ViewController.swift.
+    private static func account(for aiService: String) -> String {
+        return aiService == "gemini" ? "apiKey" : "apiKey.\(aiService)"
+    }
+
+    private static func baseQuery(service aiService: String) -> [String: Any] {
         return [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: keychainService,
-            kSecAttrAccount as String: keychainAccount,
+            kSecAttrAccount as String: account(for: aiService),
             kSecAttrAccessGroup as String: keychainAccessGroup,
             kSecAttrSynchronizable as String: kCFBooleanTrue!,
         ]
     }
 
-    private static func getApiKey() -> String? {
-        var query = baseQuery()
+    private static func read(service aiService: String) -> String? {
+        var query = baseQuery(service: aiService)
         query[kSecMatchLimit as String] = kSecMatchLimitOne
         query[kSecReturnData as String] = true
 
@@ -123,13 +132,25 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         return String(data: data, encoding: .utf8)
     }
 
-    private static func setApiKey(_ apiKey: String) -> Bool {
+    private static func getApiKey(service aiService: String) -> String? {
+        if let key = read(service: aiService), !key.isEmpty { return key }
+        // Before per-service keys, a single (Gemini-slot) key served whichever
+        // service was selected: hand a non-Gemini legacy key over to OpenAI /
+        // OpenRouter the first time they ask.
+        if aiService != "gemini", let legacy = read(service: "gemini"), !legacy.isEmpty,
+           !legacy.hasPrefix("AIza"), setApiKey(legacy, service: aiService) {
+            return legacy
+        }
+        return nil
+    }
+
+    private static func setApiKey(_ apiKey: String, service aiService: String) -> Bool {
         // The item syncs through iCloud Keychain: skip no-op writes and never
         // create an item for an empty key, or a device the sync hasn't reached
         // yet would wipe the key on every other device.
-        if apiKey == (getApiKey() ?? "") { return true }
+        if apiKey == (read(service: aiService) ?? "") { return true }
         guard let data = apiKey.data(using: .utf8) else { return false }
-        let query = baseQuery()
+        let query = baseQuery(service: aiService)
 
         let updateStatus = SecItemUpdate(
             query as CFDictionary,
@@ -140,6 +161,7 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
             os_log(.error, "Keychain update failed: %d", updateStatus)
             return false
         }
+        if apiKey.isEmpty { return true }
 
         var addQuery = query
         addQuery[kSecValueData as String] = data
@@ -152,8 +174,8 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         return true
     }
 
-    private static func deleteApiKey() -> Bool {
-        let status = SecItemDelete(baseQuery() as CFDictionary)
+    private static func deleteApiKey(service aiService: String) -> Bool {
+        let status = SecItemDelete(baseQuery(service: aiService) as CFDictionary)
         return status == errSecSuccess || status == errSecItemNotFound
     }
 

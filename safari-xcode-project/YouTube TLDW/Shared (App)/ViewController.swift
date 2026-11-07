@@ -36,6 +36,7 @@ class ViewController: PlatformViewController, WKNavigationDelegate, WKScriptMess
         let ucc = self.webView.configuration.userContentController
         ucc.add(self, name: "controller")
         ucc.add(self, name: "saveSettings")
+        ucc.add(self, name: "historyChanged")
         let replyHandler: WKScriptMessageHandlerWithReply = self
         ucc.addScriptMessageHandler(replyHandler, contentWorld: .page, name: "nativeFetch")
         ucc.addScriptMessageHandler(replyHandler, contentWorld: .page, name: "openExternal")
@@ -47,6 +48,10 @@ class ViewController: PlatformViewController, WKNavigationDelegate, WKScriptMess
         ucc.addScriptMessageHandler(replyHandler, contentWorld: .page, name: "aiAsk")
 
         self.webView.loadFileURL(Bundle.main.url(forResource: "Main", withExtension: "html")!, allowingReadAccessTo: Bundle.main.resourceURL!)
+
+        HistorySync.shared.onRemoteChanges = { [weak self] changes in
+            self?.deliverCloudHistoryToWeb(changes)
+        }
 
         NotificationCenter.default.addObserver(self, selector: #selector(handlePendingDeepLink), name: .tldwDeepLink, object: nil)
 #if os(iOS)
@@ -65,16 +70,24 @@ class ViewController: PlatformViewController, WKNavigationDelegate, WKScriptMess
         if let url = consumePendingURLFromAppGroup() {
             deliverDeepLinkToWeb(url: url)
         }
-        pushKeychainKeyToWeb()
+        pushKeychainKeysToWeb()
+        HistorySync.shared.sync()
     }
 
-    // The API key syncs through iCloud Keychain and may land on this device
-    // after the page loaded: hand the current one to the web UI.
-    private func pushKeychainKeyToWeb() {
-        guard let apiKey = SharedKeychain.getApiKey(), !apiKey.isEmpty,
-              let data = try? JSONSerialization.data(withJSONObject: [apiKey]),
+    // The API keys sync through iCloud Keychain and may land on this device
+    // after the page loaded: hand the current ones to the web UI.
+    private func pushKeychainKeysToWeb() {
+        let keys = SharedKeychain.allApiKeys()
+        guard !keys.isEmpty,
+              let data = try? JSONSerialization.data(withJSONObject: keys),
               let json = String(data: data, encoding: .utf8) else { return }
-        webView.evaluateJavaScript("window.__tldwApplyKeychainKey && window.__tldwApplyKeychainKey(\(json)[0]);", completionHandler: nil)
+        webView.evaluateJavaScript("window.__tldwApplyKeychainKeys && window.__tldwApplyKeychainKeys(\(json));", completionHandler: nil)
+    }
+
+    private func deliverCloudHistoryToWeb(_ changes: [String: Any]) {
+        guard let data = try? JSONSerialization.data(withJSONObject: changes),
+              let json = String(data: data, encoding: .utf8) else { return }
+        webView.evaluateJavaScript("window.__tldwApplyCloudHistory && window.__tldwApplyCloudHistory(\(json));", completionHandler: nil)
     }
 
     func deliverDeepLinkToWeb(url: URL) {
@@ -150,6 +163,7 @@ class ViewController: PlatformViewController, WKNavigationDelegate, WKScriptMess
         } else if let pending = consumePendingURLFromAppGroup() {
             deliverDeepLinkToWeb(url: pending)
         }
+        HistorySync.shared.sync()
     }
 
     private func injectStoredSettings() {
@@ -164,9 +178,9 @@ class ViewController: PlatformViewController, WKNavigationDelegate, WKScriptMess
             UserDefaults(suiteName: appGroupID)?.set(settings, forKey: "tldw.settings")
         }
 
-        if let apiKey = SharedKeychain.getApiKey(), !apiKey.isEmpty {
-            settings["apiKey"] = apiKey
-        }
+        // One key per AI service, all in the iCloud-synced Keychain.
+        settings.removeValue(forKey: "apiKey")
+        settings["apiKeys"] = SharedKeychain.allApiKeys(currentService: settings["aiService"] as? String)
 
         guard let data = try? JSONSerialization.data(withJSONObject: settings),
               let json = String(data: data, encoding: .utf8) else { return }
@@ -176,17 +190,28 @@ class ViewController: PlatformViewController, WKNavigationDelegate, WKScriptMess
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         if message.name == "saveSettings" {
             if var dict = message.body as? [String: Any] {
-                // The API key lives in the shared Keychain (read by the Safari
-                // extension); everything else stays in the App Group.
-                if let apiKey = dict["apiKey"] as? String {
-                    if SharedKeychain.setApiKey(apiKey) {
-                        dict.removeValue(forKey: "apiKey")
-                    } else {
-                        NSLog("[App] Keychain write failed; keeping apiKey in App Group")
+                // API keys live in the shared, iCloud-synced Keychain (read by
+                // the Safari extension); everything else stays in the App
+                // Group. Only keys the user edited are sent.
+                if let apiKeys = dict["apiKeys"] as? [String: String] {
+                    for (service, key) in apiKeys where SharedKeychain.services.contains(service) {
+                        if !SharedKeychain.setApiKey(key, service: service) {
+                            NSLog("[App] Keychain write failed for %@", service)
+                        }
                     }
                 }
+                dict.removeValue(forKey: "apiKeys")
+                dict.removeValue(forKey: "apiKey")
                 UserDefaults(suiteName: appGroupID)?.set(dict, forKey: "tldw.settings")
                 NSLog("[App] settings saved to App Group")
+            }
+            return
+        }
+        if message.name == "historyChanged" {
+            if let dict = message.body as? [String: Any] {
+                HistorySync.shared.enqueue(
+                    saves: dict["saves"] as? [[String: Any]] ?? [],
+                    deletes: dict["deletes"] as? [String] ?? [])
             }
             return
         }
@@ -350,16 +375,24 @@ extension Notification.Name {
 }
 
 // MARK: - Shared Keychain ----------------------------------------------------
-// Same item (service/account/access group, synchronizable) as
+// Same items (service/account/access group, synchronizable) as
 // SafariWebExtensionHandler.swift in Shared (Extension) — keep both in sync so
-// the app and the Safari extension genuinely share the API key.
+// the app and the Safari extension genuinely share the API keys, and iCloud
+// Keychain carries them to the user's other devices.
+//
+// One item per AI service. Gemini keeps the historical "apiKey" account so
+// existing installs (and older extension builds) still find it.
 
 enum SharedKeychain {
     private static let service = "com.mouret.youtube-tldw"
-    private static let account = "apiKey"
     private static let accessGroup = "2T8A23HDD8.com.mouret.youtube-tldw.shared"
+    static let services = ["gemini", "openai", "openrouter"]
 
-    private static func baseQuery() -> [String: Any] {
+    private static func account(for aiService: String) -> String {
+        return aiService == "gemini" ? "apiKey" : "apiKey.\(aiService)"
+    }
+
+    private static func baseQuery(account: String) -> [String: Any] {
         return [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -369,8 +402,8 @@ enum SharedKeychain {
         ]
     }
 
-    static func getApiKey() -> String? {
-        var query = baseQuery()
+    private static func read(account: String) -> String? {
+        var query = baseQuery(account: account)
         query[kSecMatchLimit as String] = kSecMatchLimitOne
         query[kSecReturnData as String] = true
 
@@ -385,13 +418,34 @@ enum SharedKeychain {
         return String(data: data, encoding: .utf8)
     }
 
-    static func setApiKey(_ apiKey: String) -> Bool {
+    static func getApiKey(service aiService: String = "gemini") -> String? {
+        return read(account: account(for: aiService))
+    }
+
+    /// Non-empty keys by service. Before per-service keys, a single key served
+    /// whichever service was selected: when `currentService` is OpenAI or
+    /// OpenRouter and has no key yet, a legacy key that isn't a Gemini key is
+    /// moved over to it.
+    static func allApiKeys(currentService: String? = nil) -> [String: String] {
+        var keys: [String: String] = [:]
+        for s in services {
+            if let k = getApiKey(service: s), !k.isEmpty { keys[s] = k }
+        }
+        if let current = currentService, current != "gemini", services.contains(current),
+           keys[current] == nil, let legacy = keys["gemini"], !legacy.hasPrefix("AIza"),
+           setApiKey(legacy, service: current) {
+            keys[current] = legacy
+        }
+        return keys
+    }
+
+    static func setApiKey(_ apiKey: String, service aiService: String = "gemini") -> Bool {
         // The item syncs through iCloud Keychain: skip no-op writes and never
         // create an item for an empty key, or a device the sync hasn't reached
         // yet would wipe the key on every other device.
-        if apiKey == (getApiKey() ?? "") { return true }
+        if apiKey == (getApiKey(service: aiService) ?? "") { return true }
         guard let data = apiKey.data(using: .utf8) else { return false }
-        let query = baseQuery()
+        let query = baseQuery(account: account(for: aiService))
 
         let updateStatus = SecItemUpdate(
             query as CFDictionary,
@@ -402,6 +456,7 @@ enum SharedKeychain {
             NSLog("[App] Keychain update failed: %d", updateStatus)
             return false
         }
+        if apiKey.isEmpty { return true }
 
         var addQuery = query
         addQuery[kSecValueData as String] = data

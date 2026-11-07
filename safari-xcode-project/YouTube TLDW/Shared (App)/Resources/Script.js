@@ -231,67 +231,142 @@ function openExternal(url) {
     catch (e) { window.open(url, '_blank'); }
 }
 
+const KEY_SERVICES = ['gemini', 'openai', 'openrouter'];
+
 const Settings = {
     KEY: 'tldw.settings',
-    defaults: { aiService: 'gemini', apiKey: '', userPrompt: '', openrouterModel: '', locale: 'auto' },
+    // `apiKeys` holds one key per AI service; `apiKey` is the selected
+    // service's, derived on load/save.
+    defaults: { aiService: 'gemini', apiKeys: {}, userPrompt: '', openrouterModel: '', locale: 'auto' },
     cache: null,
     load() {
         if (this.cache) return this.cache;
         const native = (typeof window !== 'undefined') ? window.__INITIAL_SETTINGS__ : null;
+        let s;
         if (native && Object.keys(native).length > 0) {
-            this.cache = Object.assign({}, this.defaults, native);
-            return this.cache;
+            s = Object.assign({}, this.defaults, native);
+        } else {
+            try { s = Object.assign({}, this.defaults, JSON.parse(localStorage.getItem(this.KEY) || '{}')); }
+            catch (e) { s = { ...this.defaults }; }
         }
-        try { this.cache = Object.assign({}, this.defaults, JSON.parse(localStorage.getItem(this.KEY) || '{}')); }
-        catch (e) { this.cache = { ...this.defaults }; }
+        s.apiKeys = Object.assign({}, s.apiKeys || {});
+        // Legacy single key (browser preview / pre-Keychain storage).
+        if (s.apiKey && !Object.keys(s.apiKeys).length && KEY_SERVICES.includes(s.aiService)) {
+            s.apiKeys[s.aiService] = s.apiKey;
+        }
+        this.cache = this._derive(s);
         return this.cache;
     },
+    _derive(s) {
+        s.apiKey = s.apiKeys[s.aiService] || '';
+        return s;
+    },
+    _persistLocal(s) {
+        // Keys stay in the Keychain, not in the WebView's storage.
+        const { apiKey, apiKeys, ...rest } = s;
+        localStorage.setItem(this.KEY, JSON.stringify(rest));
+    },
+    // `values.apiKeys` carries only the keys the user edited: they go to the
+    // iCloud-synced Keychain, so saving another setting never writes back a
+    // stale (or not-yet-synced, empty) key over the one on the other devices.
     save(values) {
-        const merged = Object.assign({}, this.load(), values);
-        this.cache = merged;
-        localStorage.setItem(this.KEY, JSON.stringify(merged));
-        // The key lives in the iCloud-synced Keychain: send it only when the
-        // caller sets it, so saving another setting never writes back a stale
-        // (or not-yet-synced, empty) key over the one on the other devices.
-        const payload = Object.assign({}, merged);
-        if (!('apiKey' in values)) delete payload.apiKey;
+        const current = this.load();
+        const edited = values.apiKeys || null;
+        const merged = Object.assign({}, current, values);
+        merged.apiKeys = Object.assign({}, current.apiKeys, edited || {});
+        this.cache = this._derive(merged);
+        this._persistLocal(merged);
+        const { apiKey, apiKeys, ...payload } = merged;
+        if (edited && Object.keys(edited).length) payload.apiKeys = edited;
         try { window.webkit.messageHandlers.saveSettings.postMessage(payload); } catch (e) {}
-        return merged;
+        return this.cache;
     },
     // Called by the native side when the app comes back to the foreground:
-    // picks up a key that reached this device through iCloud Keychain.
-    applyKeychainKey(key) {
+    // picks up keys that reached this device through iCloud Keychain.
+    applyKeychainKeys(keys) {
         const s = this.load();
-        if (!key || key === s.apiKey) return;
-        const previous = s.apiKey || '';
-        s.apiKey = key;
-        localStorage.setItem(this.KEY, JSON.stringify(s));
         const form = document.getElementById('settings-form');
-        if (form && form.apiKey && form.apiKey.value.trim() === previous) form.apiKey.value = key;
+        for (const service of KEY_SERVICES) {
+            const key = keys && keys[service];
+            if (!key || key === s.apiKeys[service]) continue;
+            const previous = s.apiKeys[service] || '';
+            s.apiKeys[service] = key;
+            if (typeof App !== 'undefined') App.onKeychainKeyArrived(service, previous, key);
+        }
+        this._derive(s);
     }
 };
-window.__tldwApplyKeychainKey = (key) => Settings.applyKeychainKey(key);
+window.__tldwApplyKeychainKeys = (keys) => Settings.applyKeychainKeys(keys);
+
+// Every local change is mirrored to CloudKit by the native side (which queues
+// it while offline); changes made on the other devices come back through
+// window.__tldwApplyCloudHistory.
+const CloudHistory = {
+    SEEDED_KEY: 'tldw.history.cloudSeeded',
+    send(saves, deletes) {
+        if (!saves.length && !deletes.length) return;
+        try { window.webkit.messageHandlers.historyChanged.postMessage({ saves, deletes }); } catch (e) {}
+    },
+    // First launch with sync: upload the history built before it existed.
+    seedOnce() {
+        if (localStorage.getItem(this.SEEDED_KEY)) return;
+        this.send(History.list(), []);
+        localStorage.setItem(this.SEEDED_KEY, '1');
+    }
+};
 
 const History = {
     KEY: 'tldw.history',
+    MAX: 200,
     list() {
         try { return JSON.parse(localStorage.getItem(this.KEY) || '[]'); }
         catch (e) { return []; }
     },
+    // Newest first, one entry per video, capped. Returns the ids dropped.
+    _store(all) {
+        all.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        const seen = new Set();
+        const kept = [];
+        const dropped = [];
+        for (const e of all) {
+            if (e.videoId && seen.has(e.videoId)) { dropped.push(e.id); continue; }
+            if (e.videoId) seen.add(e.videoId);
+            if (kept.length >= this.MAX) { dropped.push(e.id); continue; }
+            kept.push(e);
+        }
+        localStorage.setItem(this.KEY, JSON.stringify(kept));
+        return dropped;
+    },
     add(entry) {
-        const all = this.list();
-        const idx = all.findIndex(e => e.videoId === entry.videoId);
-        if (idx >= 0) all.splice(idx, 1);
-        all.unshift(entry);
-        localStorage.setItem(this.KEY, JSON.stringify(all.slice(0, 200)));
+        const dropped = this._store([entry, ...this.list().filter(e => e.id !== entry.id)]);
+        CloudHistory.send([entry], dropped);
     },
     remove(id) {
-        const all = this.list().filter(e => e.id !== id);
-        localStorage.setItem(this.KEY, JSON.stringify(all));
+        localStorage.setItem(this.KEY, JSON.stringify(this.list().filter(e => e.id !== id)));
+        CloudHistory.send([], [id]);
     },
-    clear() { localStorage.removeItem(this.KEY); },
-    get(id) { return this.list().find(e => e.id === id); }
+    clear() {
+        const ids = this.list().map(e => e.id);
+        localStorage.removeItem(this.KEY);
+        CloudHistory.send([], ids);
+    },
+    get(id) { return this.list().find(e => e.id === id); },
+    // Merges changes made on another device.
+    applyRemote(changes) {
+        const deletions = new Set((changes && changes.deletions) || []);
+        const byId = new Map(this.list().filter(e => !deletions.has(e.id)).map(e => [e.id, e]));
+        for (const u of (changes && changes.upserts) || []) {
+            if (!u || !u.id) continue;
+            // Keep the local transcript, which isn't synced.
+            byId.set(u.id, Object.assign({}, byId.get(u.id) || {}, u));
+        }
+        const dropped = this._store([...byId.values()]);
+        // Two devices summarized the same video: converge on the newest.
+        CloudHistory.send([], dropped);
+        if (typeof App !== 'undefined') App.refreshHistoryList();
+    }
 };
+window.__tldwApplyCloudHistory = (changes) => History.applyRemote(changes);
 
 class TranscriptFetcher {
     static INNERTUBE_API_URL = 'https://www.youtube.com/youtubei/v1/player';
@@ -510,6 +585,7 @@ const App = {
         this.bindHistory();
         this.bindUpgrade();
         this.loadSettingsForm();
+        CloudHistory.seedOnce();
         this.refreshHistoryList();
 
         window.handleDeepLink = (urlString) => this.handleDeepLink(urlString);
@@ -745,10 +821,16 @@ const App = {
                 userPrompt: (data.get('userPrompt') || '').trim(),
                 openrouterModel: (data.get('openrouterModel') || '').trim()
             };
-            // Only an edited key goes back to the (iCloud-synced) Keychain.
-            const apiKey = (data.get('apiKey') || '').trim();
-            if (apiKey !== (Settings.load().apiKey || '')) values.apiKey = apiKey;
+            // Only edited keys go back to the (iCloud-synced) Keychain.
+            this.stashApiKeyDraft();
+            const saved = Settings.load().apiKeys;
+            const apiKeys = {};
+            for (const [service, key] of Object.entries(this.apiKeyDrafts)) {
+                if (key !== (saved[service] || '')) apiKeys[service] = key;
+            }
+            if (Object.keys(apiKeys).length) values.apiKeys = apiKeys;
             Settings.save(values);
+            this.apiKeyDrafts = {};
             I18N.setLocale(newLocale);
             I18N.hydrate();
             const status = this.el('settings-status');
@@ -762,12 +844,38 @@ const App = {
         });
     },
 
+    // One key per service shares the single field: remember what was typed
+    // for each service while the user switches between them before saving.
+    apiKeyDrafts: {},
+    keyFieldService: null,
+    stashApiKeyDraft() {
+        const form = this.el('settings-form');
+        if (this.keyFieldService) this.apiKeyDrafts[this.keyFieldService] = form.apiKey.value.trim();
+    },
+    showApiKeyFor(service) {
+        const form = this.el('settings-form');
+        this.stashApiKeyDraft();
+        this.keyFieldService = KEY_SERVICES.includes(service) ? service : null;
+        if (!this.keyFieldService) return;
+        form.apiKey.value = service in this.apiKeyDrafts
+            ? this.apiKeyDrafts[service]
+            : (Settings.load().apiKeys[service] || '');
+    },
+    onKeychainKeyArrived(service, previous, key) {
+        // Don't clobber something the user is typing.
+        if (service in this.apiKeyDrafts && this.apiKeyDrafts[service] !== previous) return;
+        delete this.apiKeyDrafts[service];
+        const form = this.el('settings-form');
+        if (this.keyFieldService === service && form.apiKey.value.trim() === previous) form.apiKey.value = key;
+    },
+
     toggleServiceFields(service) {
         const orField = this.el('openrouter-model-field');
         if (orField) orField.hidden = service !== 'openrouter';
         // Apple Intelligence runs on-device — no API key field.
         const keyField = this.el('apiKey-field');
         if (keyField) keyField.hidden = service === 'apple';
+        this.showApiKeyFor(service);
     },
 
     loadSettingsForm() {
@@ -775,7 +883,8 @@ const App = {
         const form = this.el('settings-form');
         if (form.locale) form.locale.value = s.locale || 'auto';
         form.aiService.value = s.aiService;
-        form.apiKey.value = s.apiKey;
+        this.apiKeyDrafts = {};
+        this.keyFieldService = null;
         form.userPrompt.value = s.userPrompt;
         if (form.openrouterModel) form.openrouterModel.value = s.openrouterModel || '';
         this.toggleServiceFields(s.aiService);

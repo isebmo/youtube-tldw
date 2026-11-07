@@ -61,12 +61,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             .catch(error => sendResponse({ error: error.message }));
         return true;
     } else if (request.action === "getApiKey") {
-        nativeKeychain({ action: "getApiKey" })
+        nativeKeychain({ action: "getApiKey", service: request.service || "gemini" })
             .then(res => sendResponse({ apiKey: res.apiKey || "" }))
             .catch(error => sendResponse({ error: error.message }));
         return true;
     } else if (request.action === "setApiKey") {
-        nativeKeychain({ action: "setApiKey", apiKey: request.apiKey })
+        nativeKeychain({ action: "setApiKey", apiKey: request.apiKey, service: request.service || "gemini" })
             .then(res => sendResponse({ ok: !!res.ok }))
             .catch(error => sendResponse({ error: error.message }));
         return true;
