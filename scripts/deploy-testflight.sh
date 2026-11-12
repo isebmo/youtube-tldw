@@ -63,10 +63,15 @@ cd "$PROJECT_DIR"
 CURRENT_BUILD=$(xcrun agvtool what-version -terse)
 NEW_BUILD=$((CURRENT_BUILD + 1))
 xcrun agvtool new-version -all "$NEW_BUILD" >/dev/null
+# MARKETING_VERSION is a build setting (the Info.plists don't carry
+# CFBundleShortVersionString), so agvtool's marketing-version commands see
+# nothing: read and write it in project.pbxproj directly.
+PBXPROJ="$PROJECT_FILE/project.pbxproj"
 if [[ -n "$VERSION" ]]; then
-    xcrun agvtool new-marketing-version "$VERSION" >/dev/null
+    sed -i '' -E "s/MARKETING_VERSION = [^;]+;/MARKETING_VERSION = $VERSION;/" "$PBXPROJ"
 fi
-CURRENT_VERSION=$(xcrun agvtool what-marketing-version -terse1 2>/dev/null | tail -1)
+CURRENT_VERSION=$(grep -m1 -E 'MARKETING_VERSION = ' "$PBXPROJ" | sed -E 's/.*MARKETING_VERSION = "?([^";]+)"?;.*/\1/')
+[[ -n "$CURRENT_VERSION" ]] || { echo "❌  MARKETING_VERSION introuvable dans $PBXPROJ"; exit 1; }
 
 echo "📦  Version : $CURRENT_VERSION  (build $NEW_BUILD)"
 
