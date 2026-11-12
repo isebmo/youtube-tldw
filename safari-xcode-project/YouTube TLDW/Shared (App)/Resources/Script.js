@@ -12,6 +12,7 @@ const I18N_DICT = {
         "history.confirmClear": "Clear all history?",
         "history.open": "Open",
         "history.copy": "Copy",
+        "history.share": "Share",
         "history.delete": "Delete",
         "history.defaultTitle": "Video",
         "settings.title": "Settings",
@@ -52,6 +53,7 @@ const I18N_DICT = {
         "toast.noPurchase": "No purchase found.",
         "toast.summaryCopied": "Summary copied.",
         "result.copy": "Copy",
+        "result.share": "Share",
         "result.viewYT": "View on YouTube",
         "about.versionPrefix": "YouTube TLDW; — version",
         "about.sharedKey": "The Safari extension uses the same API key.",
@@ -81,6 +83,7 @@ const I18N_DICT = {
         "history.confirmClear": "Effacer tout l'historique ?",
         "history.open": "Ouvrir",
         "history.copy": "Copier",
+        "history.share": "Partager",
         "history.delete": "Supprimer",
         "history.defaultTitle": "Vidéo",
         "settings.title": "Réglages",
@@ -121,6 +124,7 @@ const I18N_DICT = {
         "toast.noPurchase": "Aucun achat trouvé.",
         "toast.summaryCopied": "Résumé copié.",
         "result.copy": "Copier",
+        "result.share": "Partager",
         "result.viewYT": "Voir sur YouTube",
         "about.versionPrefix": "YouTube TLDW; — version",
         "about.sharedKey": "L'extension Safari utilise la même clé API.",
@@ -224,6 +228,29 @@ async function nativeFetch(url, options = {}) {
         },
         headers: reply.headers
     };
+}
+
+function shareText(entry) {
+    const title = entry.title ? `${entry.title}\n\n` : '';
+    return `${title}${entry.summary || ''}`.trim();
+}
+
+async function shareSummary(entry, button) {
+    if (!entry || !entry.summary) return;
+    const r = button ? button.getBoundingClientRect() : null;
+    const payload = {
+        text: shareText(entry),
+        url: entry.url || '',
+        rect: r ? { x: r.left, y: r.top, width: r.width, height: r.height } : null
+    };
+    try {
+        await window.webkit.messageHandlers.shareSummary.postMessage(payload);
+    } catch (e) {
+        // Fallback outside the native app (e.g. plain browser preview).
+        if (navigator.share) {
+            try { await navigator.share({ title: entry.title || '', text: payload.text, url: payload.url || undefined }); } catch (_) {}
+        }
+    }
 }
 
 function openExternal(url) {
@@ -791,11 +818,13 @@ const App = {
 
         this.el('result-actions').innerHTML = `
             <button class="icon-btn" id="copy-summary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>${t('result.copy')}</button>
+            <button class="icon-btn" id="share-summary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v7a2 2 0 002 2h12a2 2 0 002-2v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg>${t('result.share')}</button>
             <button class="icon-btn" id="open-yt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3h7v7"/><path d="M21 3l-9 9"/><path d="M21 14v5a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h5"/></svg>${t('result.viewYT')}</button>
         `;
         this.el('copy-summary').addEventListener('click', () => {
             navigator.clipboard.writeText(entry.summary).then(() => this.showToast(t('toast.summaryCopied')));
         });
+        this.el('share-summary').addEventListener('click', (ev) => shareSummary(entry, ev.currentTarget));
         this.el('open-yt').addEventListener('click', () => openExternal(entry.url));
 
         this.el('result-body').innerHTML = renderMarkdown(entry.summary);
@@ -935,6 +964,8 @@ const App = {
                 this.showView('home');
             } else if (btn.dataset.action === 'copy') {
                 navigator.clipboard.writeText(entry.summary).then(() => this.showToast(t('toast.summaryCopied')));
+            } else if (btn.dataset.action === 'share') {
+                shareSummary(entry, btn);
             } else if (btn.dataset.action === 'delete') {
                 History.remove(id);
                 this.refreshHistoryList();
@@ -968,6 +999,7 @@ const App = {
                 <div class="history-actions">
                     <button class="icon-btn" data-action="open" data-id="${entry.id}">${t('history.open')}</button>
                     <button class="icon-btn" data-action="copy" data-id="${entry.id}">${t('history.copy')}</button>
+                    <button class="icon-btn" data-action="share" data-id="${entry.id}">${t('history.share')}</button>
                     <button class="icon-btn" data-action="delete" data-id="${entry.id}">${t('history.delete')}</button>
                 </div>
             `;

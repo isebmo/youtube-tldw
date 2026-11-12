@@ -46,6 +46,7 @@ class ViewController: PlatformViewController, WKNavigationDelegate, WKScriptMess
         ucc.addScriptMessageHandler(replyHandler, contentWorld: .page, name: "aiAvailability")
         ucc.addScriptMessageHandler(replyHandler, contentWorld: .page, name: "aiSummarize")
         ucc.addScriptMessageHandler(replyHandler, contentWorld: .page, name: "aiAsk")
+        ucc.addScriptMessageHandler(replyHandler, contentWorld: .page, name: "shareSummary")
 
         self.webView.loadFileURL(Bundle.main.url(forResource: "Main", withExtension: "html")!, allowingReadAccessTo: Bundle.main.resourceURL!)
 
@@ -250,9 +251,50 @@ class ViewController: PlatformViewController, WKNavigationDelegate, WKScriptMess
             handleAISummarize(body: message.body, reply: replyHandler)
         case "aiAsk":
             handleAIAsk(body: message.body, reply: replyHandler)
+        case "shareSummary":
+            handleShare(body: message.body, reply: replyHandler)
         default:
             replyHandler(nil, "Unknown handler: \(message.name)")
         }
+    }
+
+    /// Opens the system share sheet with the summary text (and the video URL).
+    /// `rect` is the tapped button's frame in web view coordinates, used to
+    /// anchor the popover on iPad and the picker on macOS.
+    private func handleShare(body: Any, reply: @escaping (Any?, String?) -> Void) {
+        guard let dict = body as? [String: Any],
+              let text = dict["text"] as? String, !text.isEmpty else {
+            reply(nil, "Invalid share request"); return
+        }
+        var items: [Any] = [text]
+        if let s = dict["url"] as? String, let url = URL(string: s) { items.append(url) }
+
+        var anchor = CGRect(x: webView.bounds.midX, y: webView.bounds.midY, width: 1, height: 1)
+        if let r = dict["rect"] as? [String: Any],
+           let x = (r["x"] as? NSNumber)?.doubleValue, let y = (r["y"] as? NSNumber)?.doubleValue,
+           let w = (r["width"] as? NSNumber)?.doubleValue, let h = (r["height"] as? NSNumber)?.doubleValue {
+            anchor = CGRect(x: x, y: y, width: max(w, 1), height: max(h, 1))
+        }
+
+#if os(iOS)
+        let activity = UIActivityViewController(activityItems: items, applicationActivities: nil)
+        if let popover = activity.popoverPresentationController {
+            popover.sourceView = webView
+            popover.sourceRect = anchor
+        }
+        activity.completionWithItemsHandler = { _, completed, _, _ in
+            reply(["completed": completed], nil)
+        }
+        present(activity, animated: true)
+#elseif os(macOS)
+        // WKWebView is flipped (origin top-left), like the DOM rects.
+        if !webView.isFlipped {
+            anchor.origin.y = webView.bounds.height - anchor.origin.y - anchor.height
+        }
+        let picker = NSSharingServicePicker(items: items)
+        picker.show(relativeTo: anchor, of: webView, preferredEdge: .minY)
+        reply(["completed": true], nil)
+#endif
     }
 
     private func handleAISummarize(body: Any, reply: @escaping (Any?, String?) -> Void) {
