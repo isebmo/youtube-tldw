@@ -1,3 +1,75 @@
+// ----- Errors ----------------------------------------------------------------
+// Network failures surface as a bare "Load failed" (Safari) / "Failed to fetch"
+// (Chrome): every fetch goes through ytsFetch so the error names the step and
+// host, and carries details for the copyable report shown to the user.
+function ytsRedact(text) {
+    return String(text)
+        .replace(/([?&]key=)[^&\s"]+/g, '$1***')
+        .replace(/(Bearer\s+)\S+/g, '$1***');
+}
+
+async function ytsFetch(step, url, options = {}) {
+    const base = { step, method: options.method || 'GET', url: ytsRedact(url) };
+    let response;
+    try {
+        response = await fetch(url, options);
+    } catch (e) {
+        const err = new Error(chrome.i18n.getMessage('errNetwork', [new URL(url, location.href).host]));
+        err.details = { ...base, cause: `${e.name}: ${e.message}` };
+        throw err;
+    }
+    if (!response.ok) {
+        const err = new Error(`${step}: HTTP ${response.status}`);
+        err.details = { ...base, status: response.status };
+        throw err;
+    }
+    return response;
+}
+
+// Rebuilds an Error from a background `{ error, details }` reply.
+function ytsRemoteError(response) {
+    const err = new Error(response.error);
+    err.details = response.details;
+    return err;
+}
+
+function ytsErrorReport(error, action) {
+    const details = { ...(error?.details || {}) };
+    const stack = details.stack || error?.stack;
+    delete details.stack;
+    const lines = [
+        `YouTube TLDW ${chrome.runtime.getManifest().version} — error report`,
+        `Date: ${new Date().toISOString()}`,
+        `Action: ${action}`,
+        `Page: ${location.href}`,
+        `Online: ${navigator.onLine}`,
+        `User agent: ${navigator.userAgent}`,
+        '',
+        `Message: ${error?.message || String(error)}`
+    ];
+    for (const [key, value] of Object.entries(details)) {
+        if (value !== undefined && value !== null && value !== '') lines.push(`${key}: ${value}`);
+    }
+    if (stack) lines.push('', 'Stack:', stack);
+    return ytsRedact(lines.join('\n'));
+}
+
+async function ytsCopyText(text) {
+    try {
+        await navigator.clipboard.writeText(text);
+    } catch (e) {
+        // Clipboard API refused (permissions / focus): legacy fallback.
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+    }
+}
+
 class TranscriptFetcher {
     // InnerTube API settings (from youtube-transcript-api Python library)
     static INNERTUBE_API_URL = "https://www.youtube.com/youtubei/v1/player";
@@ -26,7 +98,7 @@ class TranscriptFetcher {
     }
 
     static async _fetchInnertubeData(videoId, apiKey) {
-        const response = await fetch(`${this.INNERTUBE_API_URL}?key=${apiKey}`, {
+        const response = await ytsFetch('InnerTube player API', `${this.INNERTUBE_API_URL}?key=${apiKey}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -36,10 +108,6 @@ class TranscriptFetcher {
                 videoId: videoId
             })
         });
-
-        if (!response.ok) {
-            throw new Error(`InnerTube API request failed: ${response.status}`);
-        }
 
         return response.json();
     }
@@ -67,7 +135,7 @@ class TranscriptFetcher {
             const videoId = this._extractVideoId();
 
             // Fetch the page HTML to get the InnerTube API key
-            const videoPageHtml = await fetch(window.location.href).then(res => res.text());
+            const videoPageHtml = await ytsFetch('YouTube watch page', window.location.href).then(res => res.text());
             const apiKey = await this._fetchInnertubeApiKey(videoPageHtml);
 
             // Fetch player data from InnerTube API
@@ -99,7 +167,7 @@ class TranscriptFetcher {
             transcriptUrl = transcriptUrl.replace("&fmt=srv3", "");
 
             // Fetch and parse the transcript XML
-            const transcriptXml = await fetch(transcriptUrl).then(res => res.text());
+            const transcriptXml = await ytsFetch('Caption track', transcriptUrl).then(res => res.text());
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(transcriptXml, "text/xml");
             const textNodes = xmlDoc.getElementsByTagName("text");
@@ -338,7 +406,7 @@ class YouTubeSummarizerUI {
             });
             container.appendChild(transcriptContent);
         } catch (error) {
-            document.getElementById('yts-text-content').textContent = chrome.i18n.getMessage('errorPrefix', [error.message]);
+            this.renderError(document.getElementById('yts-text-content'), 'errorPrefix', error, 'showTranscript');
         } finally {
             this.setLoading(false);
         }
@@ -378,12 +446,12 @@ class YouTubeSummarizerUI {
                 userPrompt: settings.userPrompt
             });
 
-            if (response.error) throw new Error(response.error);
+            if (response.error) throw ytsRemoteError(response);
             this.cachedSummary = response.summary;
             const modelBadge = response.model ? `<div class="yts-model-badge">${chrome.i18n.getMessage('modelPrefix', [response.model])}</div>` : '';
             this._setHTMLSafe(document.getElementById('yts-text-content'), modelBadge + this.renderMarkdown(response.summary));
         } catch (error) {
-            document.getElementById('yts-text-content').textContent = chrome.i18n.getMessage('errorPrefix', [error.message]);
+            this.renderError(document.getElementById('yts-text-content'), 'errorPrefix', error, 'summarize');
         } finally {
             this.setLoading(false);
         }
@@ -401,7 +469,7 @@ class YouTubeSummarizerUI {
             try {
                 this.cachedTranscript = await TranscriptFetcher.getTranscript();
             } catch (error) {
-                document.getElementById('yts-text-content').textContent = chrome.i18n.getMessage('transcriptErrorPrefix', [error.message]);
+                this.renderError(document.getElementById('yts-text-content'), 'transcriptErrorPrefix', error, 'askQuestion (transcript)');
                 this.setLoading(false);
                 return;
             }
@@ -428,12 +496,52 @@ class YouTubeSummarizerUI {
                 userPrompt: settings.userPrompt
             });
 
-            if (response.error) throw new Error(response.error);
+            if (response.error) throw ytsRemoteError(response);
             this.qaHistory.push({ question, answer: response.answer });
             this.replaceQABubble(loadingId, 'answer', response.answer, response.model);
         } catch (error) {
-            this.replaceQABubble(loadingId, 'answer', chrome.i18n.getMessage('errorPrefix', [error.message]));
+            this.showQAError(loadingId, error);
         }
+    }
+
+    // Shows a readable message plus a "Copy error" button and a collapsible
+    // technical report, so users can send us something we can debug.
+    renderError(container, prefixKey, error, action) {
+        const report = ytsErrorReport(error, action);
+        console.error('[YouTube TLDW]', report);
+
+        const box = document.createElement('div');
+        box.className = 'yts-error';
+        const message = document.createElement('p');
+        message.className = 'yts-error-message';
+        message.textContent = chrome.i18n.getMessage(prefixKey, [error?.message || String(error)]);
+
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'yts-secondary-btn yts-error-copy';
+        copyBtn.textContent = chrome.i18n.getMessage('copyError');
+        copyBtn.addEventListener('click', async () => {
+            await ytsCopyText(report);
+            copyBtn.textContent = chrome.i18n.getMessage('errorCopied');
+            setTimeout(() => { copyBtn.textContent = chrome.i18n.getMessage('copyError'); }, 2000);
+        });
+
+        const details = document.createElement('details');
+        details.className = 'yts-error-details';
+        const summary = document.createElement('summary');
+        summary.textContent = chrome.i18n.getMessage('errorDetails');
+        const pre = document.createElement('pre');
+        pre.textContent = report;
+        details.append(summary, pre);
+
+        box.append(message, copyBtn, details);
+        container.replaceChildren(box);
+    }
+
+    showQAError(id, error) {
+        const bubble = document.getElementById(id);
+        if (!bubble) return;
+        bubble.className = 'yts-qa-bubble yts-qa-answer';
+        this.renderError(bubble, 'errorPrefix', error, 'askQuestion');
     }
 
     appendQABubble(type, content) {

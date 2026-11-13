@@ -48,7 +48,7 @@ The three variants are near-copies. When modifying shared logic, **changes must 
 
 ## AI Service Integration
 
-- **Gemini**: Google Generative Language API (`generativelanguage.googleapis.com`), model `gemini-3.1-flash-lite`
+- **Gemini**: Google Generative Language API (`generativelanguage.googleapis.com`), model `gemini-3.5-flash-lite` by default, overridable in settings (`geminiModel`)
 - **OpenAI**: Chat completions API, model `gpt-4o`
 - **OpenRouter**: OpenAI-compatible API with extra headers (`HTTP-Referer`, `X-Title`)
 

@@ -87,6 +87,12 @@
                         <input type="password" name="apiKey" placeholder="AIza…" autocapitalize="none" autocorrect="off" spellcheck="false">
                     </label>
 
+                    <label class="field" id="gemini-model-field">
+                        <span data-i18n="settings.geminiModel">Gemini model</span>
+                        <input type="text" name="geminiModel" placeholder="gemini-3.5-flash-lite" autocapitalize="none" autocorrect="off" spellcheck="false">
+                        <small class="muted" data-i18n="settings.geminiHint">Leave empty to use the default (gemini-3.5-flash-lite). See ai.google.dev/gemini-api/docs/models for available IDs.</small>
+                    </label>
+
                     <label class="field" id="openrouter-model-field" hidden>
                         <span data-i18n="settings.openrouterModel">OpenRouter model</span>
                         <input type="text" name="openrouterModel" placeholder="google/gemini-2.5-flash" autocapitalize="none" autocorrect="off" spellcheck="false">

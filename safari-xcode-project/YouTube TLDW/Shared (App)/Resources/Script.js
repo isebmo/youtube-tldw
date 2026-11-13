@@ -23,6 +23,8 @@ const I18N_DICT = {
         "settings.appleHint": "Runs on your device — no API key needed.",
         "settings.appleUnavailable": "not available on this device",
         "settings.apiKey": "API key",
+        "settings.geminiModel": "Gemini model",
+        "settings.geminiHint": "Leave empty to use the default (gemini-3.5-flash-lite). See ai.google.dev/gemini-api/docs/models for available IDs.",
         "settings.openrouterModel": "OpenRouter model",
         "settings.openrouterHint": "Leave empty to use the default. See openrouter.ai/models for available IDs.",
         "settings.customInstructions": "Custom instructions (optional)",
@@ -94,6 +96,8 @@ const I18N_DICT = {
         "settings.appleHint": "Fonctionne sur votre appareil — aucune clé API requise.",
         "settings.appleUnavailable": "indisponible sur cet appareil",
         "settings.apiKey": "Clé API",
+        "settings.geminiModel": "Modèle Gemini",
+        "settings.geminiHint": "Laisse vide pour utiliser le modèle par défaut (gemini-3.5-flash-lite). Voir ai.google.dev/gemini-api/docs/models pour les identifiants disponibles.",
         "settings.openrouterModel": "Modèle OpenRouter",
         "settings.openrouterHint": "Laisse vide pour utiliser le modèle par défaut. Voir openrouter.ai/models pour les identifiants disponibles.",
         "settings.customInstructions": "Instructions personnalisées (optionnel)",
@@ -264,7 +268,7 @@ const Settings = {
     KEY: 'tldw.settings',
     // `apiKeys` holds one key per AI service; `apiKey` is the selected
     // service's, derived on load/save.
-    defaults: { aiService: 'gemini', apiKeys: {}, userPrompt: '', openrouterModel: '', locale: 'auto' },
+    defaults: { aiService: 'gemini', apiKeys: {}, userPrompt: '', openrouterModel: '', geminiModel: '', locale: 'auto' },
     cache: null,
     load() {
         if (this.cache) return this.cache;
@@ -512,15 +516,20 @@ async function summarize(transcript, settings) {
     let prompt = FIXED_PROMPT.replace('{{transcript}}', transcript);
     if (settings.userPrompt) prompt += "\n\nAdditional instructions:\n" + settings.userPrompt;
 
-    if (settings.aiService === 'gemini') return summarizeGemini(settings.apiKey, prompt);
+    if (settings.aiService === 'gemini') return summarizeGemini(settings.apiKey, prompt, settings.geminiModel);
     if (settings.aiService === 'openai' || settings.aiService === 'openrouter') {
         return summarizeOpenAICompatible(settings.aiService, settings.apiKey, prompt, settings.openrouterModel);
     }
     throw new Error(t('error.unsupportedService', { service: settings.aiService }));
 }
 
-async function summarizeGemini(apiKey, prompt) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`;
+// The Gemini model is a setting so a renamed/retired model can be fixed without
+// shipping a new build; empty means the default.
+const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash-lite';
+
+async function summarizeGemini(apiKey, prompt, geminiModel) {
+    const model = (geminiModel || '').trim().replace(/^models\//, '') || DEFAULT_GEMINI_MODEL;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${apiKey}`;
     const res = await nativeFetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -534,7 +543,7 @@ async function summarizeGemini(apiKey, prompt) {
     const data = await res.json();
     const summary = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!summary) throw new Error(t('error.noSummary', { service: 'Gemini' }));
-    return { summary, model: 'gemini-3.1-flash-lite' };
+    return { summary, model };
 }
 
 async function summarizeOpenAICompatible(service, apiKey, prompt, openrouterModel) {
@@ -848,7 +857,8 @@ const App = {
                 locale: newLocale,
                 aiService: data.get('aiService'),
                 userPrompt: (data.get('userPrompt') || '').trim(),
-                openrouterModel: (data.get('openrouterModel') || '').trim()
+                openrouterModel: (data.get('openrouterModel') || '').trim(),
+                geminiModel: (data.get('geminiModel') || '').trim()
             };
             // Only edited keys go back to the (iCloud-synced) Keychain.
             this.stashApiKeyDraft();
@@ -901,6 +911,8 @@ const App = {
     toggleServiceFields(service) {
         const orField = this.el('openrouter-model-field');
         if (orField) orField.hidden = service !== 'openrouter';
+        const geminiField = this.el('gemini-model-field');
+        if (geminiField) geminiField.hidden = service !== 'gemini';
         // Apple Intelligence runs on-device — no API key field.
         const keyField = this.el('apiKey-field');
         if (keyField) keyField.hidden = service === 'apple';
@@ -916,6 +928,7 @@ const App = {
         this.keyFieldService = null;
         form.userPrompt.value = s.userPrompt;
         if (form.openrouterModel) form.openrouterModel.value = s.openrouterModel || '';
+        if (form.geminiModel) form.geminiModel.value = s.geminiModel || '';
         this.toggleServiceFields(s.aiService);
         this.probeAppleIntelligence(form, s);
     },

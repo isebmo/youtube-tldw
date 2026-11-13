@@ -44,6 +44,8 @@ const updateLabel = (service) => {
   if (service === 'gemini') label.textContent = i18n('apiKeyLabelGemini');
   else if (service === 'openai') label.textContent = i18n('apiKeyLabelOpenAI');
   else if (service === 'openrouter') label.textContent = i18n('apiKeyLabelOpenRouter');
+  document.getElementById('geminiModelGroup').style.display =
+    service === 'gemini' ? 'block' : 'none';
   document.getElementById('openrouterModelGroup').style.display =
     service === 'openrouter' ? 'block' : 'none';
 };
@@ -53,24 +55,26 @@ const saveOptions = () => {
   const apiKey = document.getElementById('apiKey').value;
   const userPrompt = document.getElementById('userPrompt').value;
   const openrouterModel = document.getElementById('openrouterModel').value.trim();
+  const geminiModel = document.getElementById('geminiModel').value.trim();
 
   requestServicePermission(aiService).then((granted) => {
     if (!granted) {
       showStatus(i18n('permissionDenied'), 'error');
       return;
     }
-    browser.storage.sync.set({ aiService, apiKey, userPrompt, openrouterModel }).then(() => {
+    browser.storage.sync.set({ aiService, apiKey, userPrompt, openrouterModel, geminiModel }).then(() => {
       showStatus(i18n('settingsSaved'), 'success');
     });
   });
 };
 
 const restoreOptions = () => {
-  browser.storage.sync.get({ aiService: 'gemini', apiKey: '', userPrompt: '', openrouterModel: '' }).then((items) => {
+  browser.storage.sync.get({ aiService: 'gemini', apiKey: '', userPrompt: '', openrouterModel: '', geminiModel: '' }).then((items) => {
     document.getElementById('aiService').value = items.aiService;
     document.getElementById('apiKey').value = items.apiKey;
     document.getElementById('userPrompt').value = items.userPrompt;
     document.getElementById('openrouterModel').value = items.openrouterModel;
+  document.getElementById('geminiModel').value = items.geminiModel;
     updateLabel(items.aiService);
   });
 };

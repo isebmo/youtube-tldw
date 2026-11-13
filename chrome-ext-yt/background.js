@@ -1,18 +1,75 @@
+// ----- Errors ----------------------------------------------------------------
+// AI-call failures carry a `details` object (step, redacted URL, HTTP status,
+// raw cause) that the content script turns into a copyable debug report: a bare
+// network error ("Load failed" in Safari, "Failed to fetch" in Chrome) says
+// nothing about which request failed or why.
+function redactUrl(url) {
+    try {
+        const u = new URL(url);
+        if (u.searchParams.has('key')) u.searchParams.set('key', '***');
+        return u.toString();
+    } catch (e) {
+        return String(url);
+    }
+}
+
+async function apiFetch(step, url, options = {}) {
+    const base = { step, method: options.method || 'GET', url: redactUrl(url) };
+    let response;
+    try {
+        response = await fetch(url, options);
+    } catch (e) {
+        const err = new Error(chrome.i18n.getMessage('errNetwork', [new URL(url).host]));
+        err.details = { ...base, cause: `${e.name}: ${e.message}` };
+        throw err;
+    }
+    if (!response.ok) {
+        const body = await response.text().catch(() => '');
+        let apiMessage = null;
+        try { apiMessage = JSON.parse(body).error?.message; } catch (e) { /* not JSON */ }
+        const err = new Error(apiMessage || `${step}: HTTP ${response.status}`);
+        err.details = { ...base, status: response.status, body: body.slice(0, 500) };
+        throw err;
+    }
+    return response;
+}
+
+function errorResponse(error, aiService) {
+    return {
+        error: error?.message || String(error),
+        details: {
+            aiService,
+            ...(error?.details || {}),
+            name: error?.name,
+            stack: (error?.stack || '').split('\n').slice(0, 6).join('\n')
+        }
+    };
+}
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "summarize") {
         summarizeVideo(request.transcript, request.aiService, request.apiKey, request.userPrompt)
             .then(result => sendResponse({ summary: result.summary, model: result.model }))
-            .catch(error => sendResponse({ error: error.message }));
+            .catch(error => sendResponse(errorResponse(error, request.aiService)));
         return true;
     } else if (request.action === "askQuestion") {
         askQuestion(request.transcript, request.question, request.qaHistory, request.aiService, request.apiKey, request.userPrompt)
             .then(result => sendResponse({ answer: result.answer, model: result.model }))
-            .catch(error => sendResponse({ error: error.message }));
+            .catch(error => sendResponse(errorResponse(error, request.aiService)));
         return true;
     } else if (request.action === "openOptions") {
         chrome.runtime.openOptionsPage();
     }
 });
+
+// The Gemini model is a setting so a renamed/retired model can be fixed without
+// shipping a new version; empty means the default below.
+const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash-lite';
+
+async function getGeminiModel() {
+    const { geminiModel } = await chrome.storage.sync.get({ geminiModel: '' });
+    return (geminiModel || '').trim().replace(/^models\//, '') || DEFAULT_GEMINI_MODEL;
+}
 
 async function getOpenRouterModel() {
     const { openrouterModel } = await chrome.storage.sync.get({ openrouterModel: '' });
@@ -51,7 +108,8 @@ async function summarizeVideo(transcript, aiService, apiKey, userPrompt) {
 }
 
 async function summarizeWithGemini(apiKey, promptText) {
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`;
+    const model = await getGeminiModel();
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${apiKey}`;
 
     const payload = {
         contents: [{
@@ -59,21 +117,16 @@ async function summarizeWithGemini(apiKey, promptText) {
         }]
     };
 
-    const response = await fetch(apiUrl, {
+    const response = await apiFetch('Gemini API', apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
     });
 
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || `Gemini API Error: ${response.status}`);
-    }
-
     const data = await response.json();
     const summary = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!summary) throw new Error(chrome.i18n.getMessage("errNoSummary", ["Gemini"]));
-    return { summary, model: 'gemini-3.1-flash-lite' };
+    return { summary, model };
 }
 
 async function summarizeWithOpenAICompatible(service, apiKey, promptText) {
@@ -105,16 +158,11 @@ async function summarizeWithOpenAICompatible(service, apiKey, promptText) {
         headers['X-Title'] = 'YouTube Summarizer';
     }
 
-    const response = await fetch(apiUrl, {
+    const response = await apiFetch(`${service} API`, apiUrl, {
         method: 'POST',
         headers: headers,
         body: JSON.stringify(payload)
     });
-
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || `${service} API Error: ${response.status}`);
-    }
 
     const data = await response.json();
     const summary = data.choices?.[0]?.message?.content;
@@ -142,7 +190,8 @@ async function askQuestion(transcript, question, qaHistory, aiService, apiKey, u
 }
 
 async function askWithGemini(apiKey, systemContext, question, qaHistory) {
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`;
+    const model = await getGeminiModel();
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${apiKey}`;
 
     const contents = [];
     if (qaHistory.length === 0) {
@@ -157,21 +206,16 @@ async function askWithGemini(apiKey, systemContext, question, qaHistory) {
         contents.push({ role: "user", parts: [{ text: question }] });
     }
 
-    const response = await fetch(apiUrl, {
+    const response = await apiFetch('Gemini API', apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contents })
     });
 
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || `Gemini API Error: ${response.status}`);
-    }
-
     const data = await response.json();
     const answer = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!answer) throw new Error(chrome.i18n.getMessage("errNoAnswer", ["Gemini"]));
-    return { answer, model: 'gemini-3.1-flash-lite' };
+    return { answer, model };
 }
 
 async function askWithOpenAICompatible(service, apiKey, systemContext, question, qaHistory) {
@@ -200,16 +244,11 @@ async function askWithOpenAICompatible(service, apiKey, systemContext, question,
         headers['X-Title'] = 'YouTube Summarizer';
     }
 
-    const response = await fetch(apiUrl, {
+    const response = await apiFetch(`${service} API`, apiUrl, {
         method: 'POST',
         headers,
         body: JSON.stringify({ model, messages })
     });
-
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || `${service} API Error: ${response.status}`);
-    }
 
     const data = await response.json();
     const answer = data.choices?.[0]?.message?.content;

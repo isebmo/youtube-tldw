@@ -274,6 +274,12 @@
       <input type="password" id="apiKey" data-i18n-attr-placeholder="apiKeyPlaceholder" placeholder="Enter your API Key">
     </div>
 
+    <div class="form-group" id="geminiModelGroup">
+      <label for="geminiModel" data-i18n="geminiModelLabel">Gemini model:</label>
+      <input type="text" id="geminiModel" data-i18n-attr-placeholder="geminiModelPlaceholder" placeholder="gemini-3.5-flash-lite">
+      <small data-i18n="geminiModelHint">Leave empty to use the default (gemini-3.5-flash-lite). See ai.google.dev/gemini-api/docs/models for available IDs.</small>
+    </div>
+
     <div class="form-group" id="openrouterModelGroup" style="display: none;">
       <label for="openrouterModel" data-i18n="openrouterModelLabel">OpenRouter model:</label>
       <input type="text" id="openrouterModel" data-i18n-attr-placeholder="openrouterModelPlaceholder" placeholder="google/gemini-2.5-flash">

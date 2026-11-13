@@ -11,6 +11,9 @@
   "apiKeyLabelOpenAI": { "message": "OpenAI API Key:" },
   "apiKeyLabelOpenRouter": { "message": "OpenRouter API Key:" },
   "apiKeyPlaceholder": { "message": "Enter your API key" },
+  "geminiModelLabel": { "message": "Gemini model:" },
+  "geminiModelPlaceholder": { "message": "gemini-3.5-flash-lite" },
+  "geminiModelHint": { "message": "Leave empty to use the default (gemini-3.5-flash-lite). See ai.google.dev/gemini-api/docs/models for available IDs." },
   "openrouterModelLabel": { "message": "OpenRouter model:" },
   "openrouterModelPlaceholder": { "message": "google/gemini-2.5-flash" },
   "openrouterModelHint": { "message": "Leave empty to use the default. See openrouter.ai/models for available IDs." },
@@ -70,5 +73,13 @@
   },
   "permissionDenied": {
     "message": "Access to this AI service's API was not granted. Reverting to Gemini."
-  }
+  },
+
+  "errNetwork": {
+    "message": "Could not reach $HOST$ (network error). Check your connection, VPN or content blocker, then try again.",
+    "placeholders": { "host": { "content": "$1" } }
+  },
+  "copyError": { "message": "Copy error" },
+  "errorCopied": { "message": "Copied!" },
+  "errorDetails": { "message": "Technical details" }
 }

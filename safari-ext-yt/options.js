@@ -44,6 +44,8 @@ const updateLabel = (service) => {
   if (service === 'gemini') label.textContent = i18n('apiKeyLabelGemini');
   else if (service === 'openai') label.textContent = i18n('apiKeyLabelOpenAI');
   else if (service === 'openrouter') label.textContent = i18n('apiKeyLabelOpenRouter');
+  document.getElementById('geminiModelGroup').style.display =
+    service === 'gemini' ? 'block' : 'none';
   document.getElementById('openrouterModelGroup').style.display =
     service === 'openrouter' ? 'block' : 'none';
   // Apple Intelligence runs on-device, so no API key is needed.
@@ -89,10 +91,11 @@ const saveOptions = async () => {
   const aiService = document.getElementById('aiService').value;
   const userPrompt = document.getElementById('userPrompt').value;
   const openrouterModel = document.getElementById('openrouterModel').value.trim();
+  const geminiModel = document.getElementById('geminiModel').value.trim();
 
   try {
     await new Promise((resolve, reject) => {
-      chrome.storage.sync.set({ aiService, userPrompt, openrouterModel }, () => {
+      chrome.storage.sync.set({ aiService, userPrompt, openrouterModel, geminiModel }, () => {
         if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
         else resolve();
       });
@@ -121,7 +124,7 @@ const saveOptions = async () => {
 const restoreOptions = async () => {
   const items = await new Promise((resolve) => {
     chrome.storage.sync.get(
-      { aiService: 'gemini', apiKey: '', userPrompt: '', openrouterModel: '' },
+      { aiService: 'gemini', apiKey: '', userPrompt: '', openrouterModel: '', geminiModel: '' },
       resolve
     );
   });
@@ -129,6 +132,7 @@ const restoreOptions = async () => {
   document.getElementById('aiService').value = items.aiService;
   document.getElementById('userPrompt').value = items.userPrompt;
   document.getElementById('openrouterModel').value = items.openrouterModel;
+  document.getElementById('geminiModel').value = items.geminiModel;
   updateLabel(items.aiService);
 
   // One-shot migration: if Keychain is empty but a key was previously stored in

@@ -487,3 +487,34 @@ html[dark] :root,
     flex: 1;
     line-height: 1.5;
 }
+/* Error display with copyable debug report */
+.yts-error-message {
+    margin: 0 0 12px;
+}
+
+.yts-error-copy {
+    padding: 8px 14px;
+    font-size: 13px;
+}
+
+.yts-error-details {
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--yts-text-dim);
+}
+
+.yts-error-details summary {
+    cursor: pointer;
+}
+
+.yts-error-details pre {
+    margin: 8px 0 0;
+    padding: 10px;
+    border: 1px solid var(--yts-border);
+    border-radius: 8px;
+    background: rgba(128, 128, 128, 0.1);
+    white-space: pre-wrap;
+    word-break: break-all;
+    user-select: text;
+    -webkit-user-select: text;
+}
